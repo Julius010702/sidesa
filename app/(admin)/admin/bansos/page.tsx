@@ -7,6 +7,23 @@ import { getStatusColor, getStatusLabel } from '@/lib/utils'
 
 const ADMIN_ROLES = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
 
+interface BansosItem {
+  id: string
+  jenisBansos: string
+  tahun: number
+  nominal: number | null
+  status: string
+  penduduk: {
+    id: string
+    nama: string
+    nik: string
+    alamat: string
+  }
+  _count: {
+    penyaluran: number
+  }
+}
+
 async function getBansosList(search: string, page: number, status: string) {
   const limit = 20
   const skip = (page - 1) * limit
@@ -60,7 +77,9 @@ export default async function AdminBansosPage({ searchParams }: PageProps) {
     by: ['status'],
     _count: true,
   })
-  const statMap = Object.fromEntries(stats.map((s) => [s.status, s._count]))
+  const statMap = Object.fromEntries(
+    stats.map((s: { status: string; _count: number }) => [s.status, s._count])
+  )
 
   return (
     <div>
@@ -128,7 +147,7 @@ export default async function AdminBansosPage({ searchParams }: PageProps) {
               <div className="col-span-2 text-right">Penyaluran</div>
             </div>
             <div className="divide-y divide-gray-50">
-              {data.map((b) => (
+              {(data as BansosItem[]).map((b) => (
                 <div key={b.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 px-5 py-4 hover:bg-gray-50/50 transition-colors items-center">
                   <div className="md:col-span-4">
                     <p className="text-sm font-semibold text-gray-800">{b.penduduk.nama}</p>
