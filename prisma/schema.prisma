@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== ENUM =====================
+
+enum Role {
+  WARGA
+  ADMIN_DESA
+  SEKDES
+  KASI_PELAYANAN
+  KAUR_UMUM
+  RT_RW
+}
+
+enum StatusSurat {
+  PENDING
+  DIPROSES
+  DISETUJUI
+  DITOLAK
+  SELESAI
+}
+
+enum JenisSurat {
+  DOMISILI
+  KETERANGAN_USAHA
+  TIDAK_MAMPU
+  PENGANTAR_KTP
+  PENGANTAR_KK
+  PENGANTAR_SKCK
+  LAINNYA
+}
+
+enum StatusPengaduan {
+  DITERIMA
+  DICEK
+  DIPROSES
+  SELESAI
+  DITOLAK
+}
+
+enum KategoriPengaduan {
+  JALAN_RUSAK
+  LAMPU_MATI
+  SAMPAH
+  DRAINASE
+  KEAMANAN
+  SOSIAL
+  LAINNYA
+}
+
+enum StatusBansos {
+  AKTIF
+  TIDAK_AKTIF
+  PENDING
+}
+
+enum JenisBansos {
+  PKH
+  BLT
+  BPNT
+  KIP
+  LAINNYA
+}
+
+enum StatusNotifikasi {
+  BELUM_DIBACA
+  SUDAH_DIBACA
+}
+
+enum JenisKelamin {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum StatusKawin {
+  BELUM_KAWIN
+  KAWIN
+  CERAI_HIDUP
+  CERAI_MATI
+}
+
+enum Agama {
+  ISLAM
+  KRISTEN
+  KATOLIK
+  HINDU
+  BUDDHA
+  KONGHUCU
+}
+
+// ===================== MODELS =====================
+
+model User {
+  id          String   @id @default(cuid())
+  nik         String   @unique
+  nama        String
+  email       String   @unique
+  password    String
+  noHp        String?
+  role        Role     @default(WARGA)
+  isVerified  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  fotoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  penduduk     Penduduk?
+  surat        Surat[]
+  pengaduan    Pengaduan[]
+  notifikasi   Notifikasi[]
+  chatMessages ChatMessage[]
+  beritaAuthor Berita[]
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Penduduk {
+  id               String       @id @default(cuid())
+  userId           String       @unique
+  nik              String       @unique
+  noKK             String
+  nama             String
+  tempatLahir      String
+  tanggalLahir     DateTime
+  jenisKelamin     JenisKelamin
+  agama            Agama
+  statusKawin      StatusKawin
+  pekerjaan        String?
+  pendidikan       String?
+  golonganDarah    String?
+  alamat           String
+  rt               String
+  rw               String
+  dusun            String?
+  kelurahan        String
+  kecamatan        String
+  kabupaten        String
+  provinsi         String
+  kodePos          String?
+  statusHidup      Boolean      @default(true)
+  tanggalMeninggal DateTime?
+  keterangan       String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id])
+  kartuKeluarga KartuKeluarga? @relation(fields: [noKK], references: [noKK])
+  bansos        Bansos[]
+
+  @@map("penduduk")
+}
+
+model KartuKeluarga {
+  id          String   @id @default(cuid())
+  noKK        String   @unique
+  namaKepala  String
+  alamat      String
+  rt          String
+  rw          String
+  kelurahan   String
+  kecamatan   String
+  kabupaten   String
+  provinsi    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  anggota Penduduk[]
+
+  @@map("kartu_keluarga")
+}
+
+model Surat {
+  id              String      @id @default(cuid())
+  nomorSurat      String?     @unique
+  userId          String
+  jenisSurat      JenisSurat
+  keperluan       String
+  status          StatusSurat @default(PENDING)
+  catatanAdmin    String?
+  dokumenUrl      String?
+  suratJadiUrl    String?
+  tanggalDiajukan DateTime    @default(now())
+  tanggalDiproses DateTime?
+  tanggalSelesai  DateTime?
+  processedBy     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("surat")
+}
+
+model Pengaduan {
+  id             String            @id @default(cuid())
+  userId         String
+  judul          String
+  deskripsi      String
+  kategori       KategoriPengaduan
+  lokasi         String
+  fotoUrl        String?
+  status         StatusPengaduan   @default(DITERIMA)
+  prioritas      Int               @default(3)
+  assignedTo     String?
+  catatanAdmin   String?
+  buktiSelesai   String?
+  rating         Int?
+  feedbackWarga  String?
+  tanggalLapor   DateTime          @default(now())
+  tanggalUpdate  DateTime          @updatedAt
+  tanggalSelesai DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("pengaduan")
+}
+
+model Bansos {
+  id           String       @id @default(cuid())
+  pendudukId   String
+  jenisBansos  JenisBansos
+  status       StatusBansos @default(PENDING)
+  tahun        Int
+  nominal      Float?
+  keterangan   String?
+  tanggalMulai DateTime?
+  tanggalAkhir DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  penduduk   Penduduk     @relation(fields: [pendudukId], references: [id])
+  penyaluran Penyaluran[]
+
+  @@map("bansos")
+}
+
+model Penyaluran {
+  id         String   @id @default(cuid())
+  bansosId   String
+  tanggal    DateTime
+  nominal    Float
+  keterangan String?
+  createdAt  DateTime @default(now())
+
+  bansos Bansos @relation(fields: [bansosId], references: [id])
+
+  @@map("penyaluran")
+}
+
+model Berita {
+  id          String    @id @default(cuid())
+  judul       String
+  slug        String    @unique
+  konten      String
+  excerpt     String?
+  fotoUrl     String?
+  kategori    String
+  tags        String[]
+  isPublished Boolean   @default(false)
+  isPinned    Boolean   @default(false)
+  authorId    String
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@map("berita")
+}
+
+model Notifikasi {
+  id        String           @id @default(cuid())
+  userId    String
+  judul     String
+  pesan     String
+  tipe      String
+  refId     String?
+  status    StatusNotifikasi @default(BELUM_DIBACA)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifikasi")
+}
+
+// ✅ FIXED: ditambahkan field tipe dan mediaUrl
+model ChatMessage {
+  id          String   @id @default(cuid())
+  userId      String
+  pesan       String
+  tipe        String   @default("text")
+  mediaUrl    String?
+  isFromAdmin Boolean  @default(false)
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("chat_messages")
+}
+
+model Infrastruktur {
+  id          String   @id @default(cuid())
+  nama        String
+  kategori    String
+  lokasi      String
+  deskripsi   String?
+  kondisi     String
+  foto        String?
+  status      String   @default("BAIK")
+  catatan     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("infrastruktur")
+}
+
+model ProfilDesa {
+  id          String   @id @default(cuid())
+  namaDesaa   String
+  kepalaDesaa String
+  alamat      String
+  telepon     String?
+  email       String?
+  website     String?
+  deskripsi   String?
+  visi        String?
+  misi        String?
+  luasWilayah Float?
+  jumlahDusun Int?
+  logoUrl     String?
+  bannerUrl   String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("profil_desa")
+}
