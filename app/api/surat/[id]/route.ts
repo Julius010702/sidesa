@@ -1,15 +1,14 @@
+// app/api/surat/route.ts  ← FILE INI TIDAK BOLEH ADA params { id }
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { ajukanSuratSchema } from '@/lib/validations'
 
-// GET /api/surat — ambil daftar surat milik user yang login
+// GET /api/surat — ambil daftar surat
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'))
@@ -56,17 +55,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const parsed = ajukanSuratSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
     }
 
     const { jenisSurat, keperluan } = parsed.data
@@ -81,7 +75,6 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Buat notifikasi untuk user
     await prisma.notifikasi.create({
       data: {
         userId: session.userId,
