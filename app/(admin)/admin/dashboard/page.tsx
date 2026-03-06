@@ -32,30 +32,19 @@ async function getAdminStats() {
     prisma.surat.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
-      include: {
-        user: { select: { nama: true, nik: true } },
-      },
+      include: { user: { select: { nama: true, nik: true } } },
     }),
     prisma.pengaduan.findMany({
       orderBy: { tanggalLapor: 'desc' },
       take: 5,
-      include: {
-        user: { select: { nama: true } },
-      },
+      include: { user: { select: { nama: true } } },
     }),
   ])
 
   return {
-    totalPenduduk,
-    totalSurat,
-    suratPending,
-    suratDiproses,
-    totalPengaduan,
-    pengaduanAktif,
-    totalBansos,
-    totalBerita,
-    suratTerbaru,
-    pengaduanTerbaru,
+    totalPenduduk, totalSurat, suratPending, suratDiproses,
+    totalPengaduan, pengaduanAktif, totalBansos, totalBerita,
+    suratTerbaru, pengaduanTerbaru,
   }
 }
 
@@ -149,20 +138,21 @@ export default async function AdminDashboardPage() {
   return (
     <div>
       <HeaderPage
-        title={`Dashboard Admin`}
+        title="Dashboard Admin"
         subtitle={`Selamat datang, ${session.nama} · ${formatTanggal(new Date())}`}
         action={
-          <div className="flex items-center gap-2">
+          /* Mobile: stack vertical, Desktop: horizontal */
+          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 w-full xs:w-auto">
             <Link
               href="/admin/surat"
-              className="inline-flex items-center gap-1.5 bg-amber-500 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:bg-amber-600 transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 bg-amber-500 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:bg-amber-600 transition-colors"
             >
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
               {stats.suratPending} Surat Pending
             </Link>
             <Link
               href="/admin/pengaduan"
-              className="inline-flex items-center gap-1.5 bg-red-500 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:bg-red-600 transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 bg-red-500 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:bg-red-600 transition-colors"
             >
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
               {stats.pengaduanAktif} Pengaduan Aktif
@@ -174,13 +164,14 @@ export default async function AdminDashboardPage() {
       {/* Stats */}
       <DashboardAdminStats stats={statCards} />
 
-      {/* Recent activity */}
+      {/* Recent activity — 1 col mobile, 2 col desktop */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
         {/* Surat terbaru */}
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-gray-800 text-sm">Surat Masuk Terbaru</h2>
-            <Link href="/admin/surat" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+            <Link href="/admin/surat" className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap">
               Kelola semua →
             </Link>
           </div>
@@ -194,7 +185,7 @@ export default async function AdminDashboardPage() {
                 <Link
                   key={s.id}
                   href={`/admin/surat/${s.id}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group"
+                  className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-gray-50 transition-colors"
                 >
                   <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -202,10 +193,8 @@ export default async function AdminDashboardPage() {
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {s.user.nama}
-                    </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-sm font-medium text-gray-800 truncate">{s.user.nama}</p>
+                    <p className="text-xs text-gray-400 truncate">
                       {getStatusLabel(s.jenisSurat)} · {formatTanggal(s.tanggalDiajukan, 'dd MMM yyyy')}
                     </p>
                   </div>
@@ -220,9 +209,9 @@ export default async function AdminDashboardPage() {
 
         {/* Pengaduan terbaru */}
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-gray-800 text-sm">Pengaduan Terbaru</h2>
-            <Link href="/admin/pengaduan" className="text-xs text-red-600 hover:text-red-700 font-medium">
+            <Link href="/admin/pengaduan" className="text-xs text-red-600 hover:text-red-700 font-medium whitespace-nowrap">
               Kelola semua →
             </Link>
           </div>
@@ -236,7 +225,7 @@ export default async function AdminDashboardPage() {
                 <Link
                   key={p.id}
                   href={`/admin/pengaduan/${p.id}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors group"
+                  className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-gray-50 transition-colors"
                 >
                   <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -245,7 +234,7 @@ export default async function AdminDashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{p.judul}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 truncate">
                       {p.user.nama} · {formatTanggalJam(p.tanggalLapor)}
                     </p>
                   </div>
@@ -264,9 +253,9 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Quick actions */}
+      {/* Quick actions — 2 col mobile, 4 col sm+ */}
       <div className="mt-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
           Aksi Cepat
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -279,7 +268,7 @@ export default async function AdminDashboardPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-2 bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-md hover:border-gray-200 transition-all group"
+              className="flex flex-col items-center gap-2 bg-white border border-gray-100 rounded-2xl p-3 sm:p-4 hover:shadow-md hover:border-gray-200 transition-all group"
             >
               <div className={`w-10 h-10 ${item.color} rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform`}>
                 {item.icon}

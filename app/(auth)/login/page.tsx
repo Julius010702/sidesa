@@ -88,7 +88,7 @@ function LoginForm() {
             value={form.email}
             onChange={handleChange}
             placeholder="email@contoh.com"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900
               focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
               transition-all placeholder:text-gray-300"
           />
@@ -109,7 +109,7 @@ function LoginForm() {
               value={form.password}
               onChange={handleChange}
               placeholder="Masukkan password"
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm pr-10
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 pr-10
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
                 transition-all placeholder:text-gray-300"
             />

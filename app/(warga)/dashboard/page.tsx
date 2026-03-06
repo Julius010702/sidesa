@@ -19,10 +19,7 @@ async function getWargaData(userId: string) {
       take: 3,
     }),
     prisma.bansos.findMany({
-      where: {
-        penduduk: { userId },
-        status: 'AKTIF',
-      },
+      where: { penduduk: { userId }, status: 'AKTIF' },
       take: 5,
     }),
   ])
@@ -106,7 +103,7 @@ export default async function DashboardWargaPage() {
         action={
           <Link
             href="/surat/ajukan"
-            className="inline-flex items-center gap-2 bg-linear-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-sm shadow-green-200"
+            className="inline-flex items-center justify-center gap-2 bg-linear-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-sm shadow-green-200 w-full sm:w-auto"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -119,9 +116,9 @@ export default async function DashboardWargaPage() {
       {/* Stats */}
       <DashboardStats stats={stats} />
 
-      {/* Quick Actions */}
+      {/* Quick Actions — 2 col mobile, 4 col sm+ */}
       <div className="mt-6">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
           Layanan Cepat
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -134,7 +131,7 @@ export default async function DashboardWargaPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-2 bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-md hover:border-gray-200 transition-all group"
+              className="flex flex-col items-center gap-2 bg-white border border-gray-100 rounded-2xl p-3 sm:p-4 hover:shadow-md hover:border-gray-200 transition-all group"
             >
               <div className={`w-10 h-10 ${item.color} rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform`}>
                 {item.icon}
@@ -145,17 +142,17 @@ export default async function DashboardWargaPage() {
         </div>
       </div>
 
-      {/* Recent Surat & Pengaduan */}
+      {/* Recent Surat & Pengaduan — 1 col mobile, 2 col lg+ */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
         {/* Recent Surat */}
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-gray-800 text-sm">Pengajuan Surat Terbaru</h2>
-            <Link href="/surat" className="text-xs text-green-600 hover:text-green-700 font-medium">
+            <Link href="/surat" className="text-xs text-green-600 hover:text-green-700 font-medium whitespace-nowrap">
               Lihat semua →
             </Link>
           </div>
-
           <div className="divide-y divide-gray-50">
             {suratList.length === 0 ? (
               <div className="px-5 py-10 text-center">
@@ -167,7 +164,8 @@ export default async function DashboardWargaPage() {
               </div>
             ) : (
               suratList.map((surat: SuratItem) => (
-                <Link key={surat.id} href={`/surat/${surat.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors group">
+                <Link key={surat.id} href={`/surat/${surat.id}`}
+                  className="flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-gray-50 transition-colors">
                   <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -181,7 +179,7 @@ export default async function DashboardWargaPage() {
                       {formatTanggal(surat.tanggalDiajukan, 'dd MMM yyyy')}
                     </p>
                   </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusColor(surat.status)}`}>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${getStatusColor(surat.status)}`}>
                     {getStatusLabel(surat.status)}
                   </span>
                 </Link>
@@ -192,13 +190,12 @@ export default async function DashboardWargaPage() {
 
         {/* Recent Pengaduan */}
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-gray-800 text-sm">Pengaduan Terbaru</h2>
-            <Link href="/pengaduan" className="text-xs text-green-600 hover:text-green-700 font-medium">
+            <Link href="/pengaduan" className="text-xs text-green-600 hover:text-green-700 font-medium whitespace-nowrap">
               Lihat semua →
             </Link>
           </div>
-
           <div className="divide-y divide-gray-50">
             {pengaduanList.length === 0 ? (
               <div className="px-5 py-10 text-center">
@@ -210,7 +207,8 @@ export default async function DashboardWargaPage() {
               </div>
             ) : (
               pengaduanList.map((p: PengaduanItem) => (
-                <Link key={p.id} href={`/pengaduan/${p.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors group">
+                <Link key={p.id} href={`/pengaduan/${p.id}`}
+                  className="flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-gray-50 transition-colors">
                   <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
@@ -218,11 +216,11 @@ export default async function DashboardWargaPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{p.judul}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 truncate">
                       {getStatusLabel(p.kategori)} · {formatTanggal(p.tanggalLapor, 'dd MMM yyyy')}
                     </p>
                   </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusColor(p.status)}`}>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${getStatusColor(p.status)}`}>
                     {getStatusLabel(p.status)}
                   </span>
                 </Link>
@@ -233,21 +231,21 @@ export default async function DashboardWargaPage() {
       </div>
 
       {/* Info Banner */}
-      <div className="mt-4 bg-linear-to-r from-green-600 to-emerald-600 rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <div className="mt-4 bg-linear-to-r from-green-600 to-emerald-600 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <p className="text-white font-semibold text-sm">Butuh bantuan?</p>
-          <p className="text-green-100 text-xs mt-0.5">
+          <p className="text-green-100 text-xs mt-0.5 line-clamp-2">
             Tim desa siap membantu Anda melalui fitur chat atau kunjungi kantor desa pada jam kerja.
           </p>
         </div>
         <Link
           href="/chat"
-          className="shrink-0 bg-white text-green-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-50 transition-colors"
+          className="shrink-0 bg-white text-green-700 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-50 transition-colors"
         >
           Chat
         </Link>

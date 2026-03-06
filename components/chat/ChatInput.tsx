@@ -253,7 +253,8 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
 
       {/* Hidden inputs */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+      {/* Tanpa capture — iOS akan munculkan dialog native: Take Photo / Photo Library */}
+      <input ref={cameraInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {/* Main input row */}
@@ -301,7 +302,7 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
             placeholder={imagePreview ? 'Keterangan (opsional)...' : 'Ketik pesan...'}
             rows={1}
             disabled={disabled || sending}
-            className="flex-1 min-w-0 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 overflow-y-auto"
+            className="flex-1 min-w-0 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 overflow-y-auto"
             style={{ maxHeight: '80px', lineHeight: '1.4' }}
           />
         )}

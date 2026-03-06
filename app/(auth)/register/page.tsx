@@ -144,7 +144,7 @@ export default function RegisterPage() {
               required={f.required}
               value={form[f.name as keyof typeof form]}
               onChange={handleChange}
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm text-gray-900
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
                 transition-all placeholder:text-gray-300
                 ${fieldErrors[f.name] ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
@@ -172,7 +172,7 @@ export default function RegisterPage() {
               placeholder="Minimal 6 karakter"
               value={form.password}
               onChange={handleChange}
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm pr-10
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm text-gray-900 pr-10
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
                 transition-all placeholder:text-gray-300
                 ${fieldErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
@@ -212,7 +212,7 @@ export default function RegisterPage() {
             placeholder="Ulangi password"
             value={form.confirmPassword}
             onChange={handleChange}
-            className={`w-full px-3.5 py-2.5 border rounded-xl text-sm
+            className={`w-full px-3.5 py-2.5 border rounded-xl text-sm text-gray-900
               focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
               transition-all placeholder:text-gray-300
               ${fieldErrors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
