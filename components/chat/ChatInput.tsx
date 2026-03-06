@@ -253,8 +253,7 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
 
       {/* Hidden inputs */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-      {/* Tanpa capture — iOS akan munculkan dialog native: Take Photo / Photo Library */}
-      <input ref={cameraInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
       <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {/* Main input row */}
