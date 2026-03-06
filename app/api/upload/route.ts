@@ -1,31 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join, extname } from 'path'
 import { getSession } from '@/lib/auth'
+import { v2 as cloudinary } from 'cloudinary'
 
 const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-// Base MIME types tanpa codec suffix
 const ALLOWED_AUDIO_BASE = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav']
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024  // 5MB
-const MAX_AUDIO_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024   // 5MB
+const MAX_AUDIO_SIZE = 10 * 1024 * 1024  // 10MB
 
 const ALLOWED_FOLDERS = ['chat', 'berita', 'infrastruktur', 'pengaduan', 'profil', 'surat']
 
-// Ambil base MIME type, buang codec suffix (misal: "audio/webm;codecs=opus" → "audio/webm")
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
 function getBaseMime(mimeType: string): string {
   return mimeType.split(';')[0].trim().toLowerCase()
 }
 
-// Tentukan extension dari MIME type audio
 function getAudioExt(baseMime: string): string {
   const map: Record<string, string> = {
-    'audio/webm': '.webm',
-    'audio/ogg': '.ogg',
-    'audio/mp4': '.mp4',
-    'audio/mpeg': '.mp3',
-    'audio/wav': '.wav',
+    'audio/webm': 'webm',
+    'audio/ogg':  'ogg',
+    'audio/mp4':  'mp4',
+    'audio/mpeg': 'mp3',
+    'audio/wav':  'wav',
   }
-  return map[baseMime] ?? '.webm'
+  return map[baseMime] ?? 'webm'
+}
+
+function uploadToCloudinary(
+  buffer: Buffer,
+  options: {
+    folder: string
+    publicId: string
+    resourceType: 'image' | 'video' | 'raw' | 'auto'
+    format?: string
+  }
+): Promise<{ secure_url: string }> {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder:        options.folder,
+        public_id:     options.publicId,
+        resource_type: options.resourceType,
+        format:        options.format,
+      },
+      (error, result) => {
+        if (error || !result) return reject(error ?? new Error('Upload gagal'))
+        resolve(result)
+      }
+    )
+    uploadStream.end(buffer)
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -38,15 +66,12 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 400 })
 
     const baseMime = getBaseMime(file.type)
-
-    const isImage = ALLOWED_IMAGE.includes(baseMime)
-    const isAudio = ALLOWED_AUDIO_BASE.includes(baseMime)
+    const isImage  = ALLOWED_IMAGE.includes(baseMime)
+    const isAudio  = ALLOWED_AUDIO_BASE.includes(baseMime)
 
     if (!isImage && !isAudio) {
       console.warn(`[upload] MIME type tidak didukung: "${file.type}" (base: "${baseMime}")`)
-      return NextResponse.json({
-        error: `Tipe file tidak didukung: ${file.type}`
-      }, { status: 400 })
+      return NextResponse.json({ error: `Tipe file tidak didukung: ${file.type}` }, { status: 400 })
     }
 
     const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_AUDIO_SIZE
@@ -56,34 +81,33 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
-    // Ambil folder dari formData, default ke 'chat'
     const folderParam = (formData.get('folder') as string | null) ?? 'chat'
-    const folder = ALLOWED_FOLDERS.includes(folderParam) ? folderParam : 'chat'
+    const folder      = ALLOWED_FOLDERS.includes(folderParam) ? folderParam : 'chat'
 
-    const bytes = await file.arrayBuffer()
+    const bytes  = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
+    const now       = new Date()
+    const subdir    = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const typeFolder = isImage ? 'images' : 'voices'
 
-    const now = new Date()
-    const subdir = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    // Cloudinary folder path: sidesa/chat/voices/2026-03
+    const cloudFolder = `sidesa/${folder}/${typeFolder}/${subdir}`
 
-    const uploadDir = join(process.cwd(), 'public', 'uploads', folder, typeFolder, subdir)
-    await mkdir(uploadDir, { recursive: true })
+    // public_id tanpa extension (Cloudinary handle sendiri)
+    const publicId = `${session.userId}-${Date.now()}`
 
-    // Untuk gambar: pakai ext dari nama file asli, fallback ke .jpg
-    // Untuk audio: tentukan dari MIME type agar akurat
-    const ext = isImage
-      ? (extname(file.name) || '.jpg')
-      : getAudioExt(baseMime)
+    const resourceType = isImage ? 'image' : 'video' // Cloudinary pakai 'video' untuk audio
+    const format       = isImage ? undefined : getAudioExt(baseMime)
 
-    const filename = `${session.userId}-${Date.now()}${ext}`
-    const filepath = join(uploadDir, filename)
+    const result = await uploadToCloudinary(buffer, {
+      folder:       cloudFolder,
+      publicId,
+      resourceType,
+      format,
+    })
 
-    await writeFile(filepath, buffer)
-
-    const url = `/uploads/${folder}/${typeFolder}/${subdir}/${filename}`
-    return NextResponse.json({ success: true, url })
+    return NextResponse.json({ success: true, url: result.secure_url })
   } catch (e) {
     console.error('[upload] error:', e)
     return NextResponse.json({ error: 'Gagal upload file' }, { status: 500 })
