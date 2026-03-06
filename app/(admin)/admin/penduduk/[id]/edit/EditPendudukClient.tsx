@@ -12,11 +12,9 @@ const agamaOptions = [
   { value: 'BUDDHA', label: 'Buddha' },
   { value: 'KONGHUCU', label: 'Konghucu' },
 ]
-
 const pendidikanOptions = ['Tidak/Belum Sekolah', 'SD', 'SMP', 'SMA/SMK', 'D3', 'S1', 'S2', 'S3']
 const pekerjaanOptions = ['Belum/Tidak Bekerja', 'Pelajar/Mahasiswa', 'Petani', 'Nelayan', 'Wiraswasta', 'Karyawan Swasta', 'PNS', 'TNI/Polri', 'Pensiunan', 'Ibu Rumah Tangga', 'Buruh', 'Lainnya']
 const golonganDarahOptions = ['A', 'B', 'AB', 'O', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
-
 const statusKawinOptions = [
   { value: 'BELUM_KAWIN', label: 'Belum Kawin' },
   { value: 'KAWIN', label: 'Kawin' },
@@ -54,7 +52,7 @@ function InputField({ label, required, error, children }: {
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1.5">
+      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
@@ -64,9 +62,11 @@ function InputField({ label, required, error, children }: {
 }
 
 const inputCls = (err?: string) =>
-  `w-full px-3.5 py-2.5 border rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-    err ? 'border-red-300 bg-red-50' : 'border-gray-200'
+  `w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+    err ? 'border-red-300 bg-red-50' : 'border-gray-300'
   }`
+
+const readonlyCls = 'w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-500 bg-gray-100 cursor-not-allowed'
 
 export default function EditPendudukClient({ penduduk }: { penduduk: PendudukData }) {
   const router = useRouter()
@@ -105,11 +105,9 @@ export default function EditPendudukClient({ penduduk }: { penduduk: PendudukDat
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validate()) return
-
     setLoading(true)
     setError('')
     setSuccess('')
-
     try {
       const res = await fetch(`/api/penduduk/${penduduk.id}`, {
         method: 'PUT',
@@ -162,181 +160,221 @@ export default function EditPendudukClient({ penduduk }: { penduduk: PendudukDat
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 max-w-3xl">
+    <form onSubmit={handleSubmit} className="space-y-5 max-w-3xl pb-10">
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
-          <span>⚠️</span> {error}
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 text-sm font-medium px-4 py-3 rounded-xl">
+          ⚠️ {error}
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl">
-          <span>✅</span> {success}
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 text-sm font-medium px-4 py-3 rounded-xl">
+          ✅ {success}
         </div>
       )}
 
       {/* Identitas */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5">
-        <h2 className="font-semibold text-gray-800 text-sm mb-4">Identitas</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-          {/* NIK — readonly */}
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 bg-gray-50 border-b border-gray-200">
+          <h2 className="text-sm font-bold text-gray-800">👤 Identitas Diri</h2>
+        </div>
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField label="NIK">
-            <input value={form.nik} readOnly
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-400 bg-gray-50 cursor-not-allowed" />
+            <input value={form.nik} readOnly className={readonlyCls} />
           </InputField>
-
-          {/* No KK — readonly */}
           <InputField label="Nomor KK">
-            <input value={form.noKK} readOnly
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-400 bg-gray-50 cursor-not-allowed" />
+            <input value={form.noKK} readOnly className={readonlyCls} />
           </InputField>
-
           <InputField label="Nama Lengkap" required error={fieldErrors.nama}>
-            <input value={form.nama} onChange={(e) => set('nama', e.target.value)}
-              placeholder="Sesuai dokumen resmi" className={inputCls(fieldErrors.nama)} />
+            <input
+              value={form.nama}
+              onChange={(e) => set('nama', e.target.value)}
+              placeholder="Sesuai dokumen resmi"
+              className={inputCls(fieldErrors.nama)}
+            />
           </InputField>
-
           <InputField label="Jenis Kelamin" required error={fieldErrors.jenisKelamin}>
-            <select value={form.jenisKelamin} onChange={(e) => set('jenisKelamin', e.target.value)}
-              className={inputCls(fieldErrors.jenisKelamin)}>
+            <select
+              value={form.jenisKelamin}
+              onChange={(e) => set('jenisKelamin', e.target.value)}
+              className={inputCls(fieldErrors.jenisKelamin)}
+            >
               <option value="">-- Pilih --</option>
               <option value="LAKI_LAKI">Laki-laki</option>
               <option value="PEREMPUAN">Perempuan</option>
             </select>
           </InputField>
-
           <InputField label="Tempat Lahir" required error={fieldErrors.tempatLahir}>
-            <input value={form.tempatLahir} onChange={(e) => set('tempatLahir', e.target.value)}
-              placeholder="Kota/Kabupaten" className={inputCls(fieldErrors.tempatLahir)} />
+            <input
+              value={form.tempatLahir}
+              onChange={(e) => set('tempatLahir', e.target.value)}
+              placeholder="Kota/Kabupaten"
+              className={inputCls(fieldErrors.tempatLahir)}
+            />
           </InputField>
-
           <InputField label="Tanggal Lahir" required error={fieldErrors.tanggalLahir}>
-            <input type="date" value={form.tanggalLahir} onChange={(e) => set('tanggalLahir', e.target.value)}
-              className={inputCls(fieldErrors.tanggalLahir)} />
+            <input
+              type="date"
+              value={form.tanggalLahir}
+              onChange={(e) => set('tanggalLahir', e.target.value)}
+              className={inputCls(fieldErrors.tanggalLahir)}
+            />
           </InputField>
-
           <InputField label="Agama" required error={fieldErrors.agama}>
-            <select value={form.agama} onChange={(e) => set('agama', e.target.value)}
-              className={inputCls(fieldErrors.agama)}>
+            <select
+              value={form.agama}
+              onChange={(e) => set('agama', e.target.value)}
+              className={inputCls(fieldErrors.agama)}
+            >
               <option value="">-- Pilih --</option>
-              {agamaOptions.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+              {agamaOptions.map((a) => (
+                <option key={a.value} value={a.value}>{a.label}</option>
+              ))}
             </select>
           </InputField>
-
           <InputField label="Golongan Darah">
-            <select value={form.golonganDarah} onChange={(e) => set('golonganDarah', e.target.value)}
-              className={inputCls()}>
+            <select
+              value={form.golonganDarah}
+              onChange={(e) => set('golonganDarah', e.target.value)}
+              className={inputCls()}
+            >
               <option value="">-- Tidak diketahui --</option>
-              {golonganDarahOptions.map((g) => <option key={g} value={g}>{g}</option>)}
+              {golonganDarahOptions.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
             </select>
           </InputField>
         </div>
       </div>
 
       {/* Status & Pendidikan */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5">
-        <h2 className="font-semibold text-gray-800 text-sm mb-4">Status & Pendidikan</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 bg-gray-50 border-b border-gray-200">
+          <h2 className="text-sm font-bold text-gray-800">📋 Status & Pendidikan</h2>
+        </div>
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField label="Status Perkawinan" required error={fieldErrors.statusKawin}>
-            <select value={form.statusKawin} onChange={(e) => set('statusKawin', e.target.value)}
-              className={inputCls(fieldErrors.statusKawin)}>
+            <select
+              value={form.statusKawin}
+              onChange={(e) => set('statusKawin', e.target.value)}
+              className={inputCls(fieldErrors.statusKawin)}
+            >
               <option value="">-- Pilih --</option>
-              {statusKawinOptions.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {statusKawinOptions.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
             </select>
           </InputField>
-
           <InputField label="Pendidikan Terakhir">
-            <select value={form.pendidikan} onChange={(e) => set('pendidikan', e.target.value)}
-              className={inputCls()}>
+            <select
+              value={form.pendidikan}
+              onChange={(e) => set('pendidikan', e.target.value)}
+              className={inputCls()}
+            >
               <option value="">-- Pilih --</option>
-              {pendidikanOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+              {pendidikanOptions.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
           </InputField>
-
           <InputField label="Pekerjaan">
-            <select value={form.pekerjaan} onChange={(e) => set('pekerjaan', e.target.value)}
-              className={inputCls()}>
+            <select
+              value={form.pekerjaan}
+              onChange={(e) => set('pekerjaan', e.target.value)}
+              className={inputCls()}
+            >
               <option value="">-- Pilih --</option>
-              {pekerjaanOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+              {pekerjaanOptions.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
           </InputField>
         </div>
       </div>
 
       {/* Alamat */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5">
-        <h2 className="font-semibold text-gray-800 text-sm mb-4">Alamat</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 bg-gray-50 border-b border-gray-200">
+          <h2 className="text-sm font-bold text-gray-800">🏠 Alamat</h2>
+        </div>
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <InputField label="Alamat" required error={fieldErrors.alamat}>
-              <textarea value={form.alamat} onChange={(e) => set('alamat', e.target.value)}
-                rows={2} placeholder="Nama jalan, nomor rumah..."
-                className={`${inputCls(fieldErrors.alamat)} resize-none`} />
+            <InputField label="Alamat Lengkap" required error={fieldErrors.alamat}>
+              <textarea
+                value={form.alamat}
+                onChange={(e) => set('alamat', e.target.value)}
+                rows={2}
+                placeholder="Nama jalan, nomor rumah..."
+                className={`${inputCls(fieldErrors.alamat)} resize-none`}
+              />
             </InputField>
           </div>
-
           <InputField label="RT" required error={fieldErrors.rt}>
             <input value={form.rt} onChange={(e) => set('rt', e.target.value)}
               placeholder="001" className={inputCls(fieldErrors.rt)} />
           </InputField>
-
           <InputField label="RW" required error={fieldErrors.rw}>
             <input value={form.rw} onChange={(e) => set('rw', e.target.value)}
               placeholder="001" className={inputCls(fieldErrors.rw)} />
           </InputField>
-
           <InputField label="Dusun">
             <input value={form.dusun} onChange={(e) => set('dusun', e.target.value)}
-              className={inputCls()} />
+              placeholder="Nama dusun (opsional)" className={inputCls()} />
           </InputField>
-
           <InputField label="Kode Pos">
             <input value={form.kodePos} onChange={(e) => set('kodePos', e.target.value)}
               placeholder="12345" className={inputCls()} />
           </InputField>
-
           <InputField label="Kelurahan/Desa" required error={fieldErrors.kelurahan}>
             <input value={form.kelurahan} onChange={(e) => set('kelurahan', e.target.value)}
               className={inputCls(fieldErrors.kelurahan)} />
           </InputField>
-
           <InputField label="Kecamatan" required error={fieldErrors.kecamatan}>
             <input value={form.kecamatan} onChange={(e) => set('kecamatan', e.target.value)}
               className={inputCls(fieldErrors.kecamatan)} />
           </InputField>
-
           <InputField label="Kabupaten/Kota" required error={fieldErrors.kabupaten}>
             <input value={form.kabupaten} onChange={(e) => set('kabupaten', e.target.value)}
               className={inputCls(fieldErrors.kabupaten)} />
           </InputField>
-
           <InputField label="Provinsi" required error={fieldErrors.provinsi}>
             <input value={form.provinsi} onChange={(e) => set('provinsi', e.target.value)}
               className={inputCls(fieldErrors.provinsi)} />
           </InputField>
-
           <div className="sm:col-span-2">
-            <InputField label="Keterangan">
-              <textarea value={form.keterangan} onChange={(e) => set('keterangan', e.target.value)}
-                rows={2} placeholder="Catatan tambahan..."
-                className={`${inputCls()} resize-none`} />
+            <InputField label="Keterangan Tambahan">
+              <textarea
+                value={form.keterangan}
+                onChange={(e) => set('keterangan', e.target.value)}
+                rows={2}
+                placeholder="Catatan tambahan (opsional)..."
+                className={`${inputCls()} resize-none`}
+              />
             </InputField>
           </div>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
-        <button type="button" onClick={handleDelete} disabled={deleting}
-          className="px-4 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors">
+      <div className="flex gap-3 pt-1">
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="px-4 py-2.5 border border-red-300 text-red-700 font-semibold rounded-xl text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
+        >
           {deleting ? '⏳ Menghapus...' : '🗑 Hapus'}
         </button>
-        <Link href={`/admin/penduduk/${penduduk.id}`}
-          className="flex-1 text-center py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+        <Link
+          href={`/admin/penduduk/${penduduk.id}`}
+          className="flex-1 text-center py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-colors"
+        >
           Batal
         </Link>
-        <button type="submit" disabled={loading}
-          className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
           {loading ? (
             <>
               <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
