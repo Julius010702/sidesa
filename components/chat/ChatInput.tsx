@@ -28,7 +28,6 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // ── SEND TEXT / IMAGE ─────────────────────────────────────
-  // Upload dilakukan di parent (WargaChatPage / AdminChatPage)
   const handleSend = async () => {
     if (sending) return
     setUploadError(null)
@@ -88,9 +87,11 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
   const openCamera = async () => {
     const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
     if (isMobile) {
+      // Mobile: pakai native file picker tanpa capture agar user bisa pilih kamera atau galeri
       cameraInputRef.current?.click()
       return
     }
+    // Desktop: pakai webcam langsung
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       setCameraStream(stream)
@@ -167,7 +168,6 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
 
         setSending(true)
         try {
-          // Kirim blob ke parent — parent yang handle upload
           await onSendVoice(blob)
         } catch (e: unknown) {
           setUploadError(e instanceof Error ? e.message : 'Gagal mengirim voice note')
@@ -240,7 +240,7 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
         </div>
       )}
 
-      {/* Camera overlay */}
+      {/* Camera overlay (desktop only) */}
       {showCamera && (
         <div className="relative bg-black rounded-xl overflow-hidden">
           <video ref={videoRef} className="w-full max-h-40 object-cover" autoPlay playsInline muted />
@@ -254,7 +254,8 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
 
       {/* Hidden inputs */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCameraCapture} />
+      {/* Tanpa capture="environment" agar mobile bisa pilih kamera atau galeri */}
+      <input ref={cameraInputRef} type="file" accept="image/*" className="hidden" onChange={handleCameraCapture} />
 
       {/* Main input row */}
       <div className="flex items-end gap-1.5 w-full">
