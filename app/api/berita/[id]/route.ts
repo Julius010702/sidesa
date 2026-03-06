@@ -31,6 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         tags: body.tags ?? [],
         isPublished: body.isPublished,
         isPinned: body.isPinned,
+        fotoUrl: body.fotoUrl ?? null, // ✅ tambah ini
         publishedAt: body.isPublished ? new Date() : null,
       },
     })

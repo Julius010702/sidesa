@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     if (!session || !ADMIN_ROLES.includes(session.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const body = await req.json()
-    const { judul, konten, kategori, excerpt, tags, isPublished, isPinned } = body
+    const { judul, konten, kategori, excerpt, tags, isPublished, isPinned, fotoUrl } = body // ✅ tambah fotoUrl
 
     if (!judul || !konten || !kategori) return NextResponse.json({ error: 'judul, konten, kategori wajib' }, { status: 400 })
 
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
         tags: tags ?? [],
         isPublished: isPublished ?? false,
         isPinned: isPinned ?? false,
+        fotoUrl: fotoUrl ?? null, // ✅ tambah ini
         publishedAt: isPublished ? new Date() : null,
         authorId: session.userId,
         slug,

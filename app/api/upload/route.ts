@@ -4,8 +4,8 @@ import { v2 as cloudinary } from 'cloudinary'
 
 const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 const ALLOWED_AUDIO_BASE = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav']
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024   // 5MB
-const MAX_AUDIO_SIZE = 10 * 1024 * 1024  // 10MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024
+const MAX_AUDIO_SIZE = 10 * 1024 * 1024
 
 const ALLOWED_FOLDERS = ['chat', 'berita', 'infrastruktur', 'pengaduan', 'profil', 'surat']
 
@@ -13,6 +13,12 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+console.log('[cloudinary config]', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ?? 'MISSING',
+  api_key:    process.env.CLOUDINARY_API_KEY ? 'SET' : 'MISSING',
+  api_secret: process.env.CLOUDINARY_API_SECRET ? 'SET' : 'MISSING',
 })
 
 function getBaseMime(mimeType: string): string {
@@ -48,7 +54,11 @@ function uploadToCloudinary(
         format:        options.format,
       },
       (error, result) => {
-        if (error || !result) return reject(error ?? new Error('Upload gagal'))
+        if (error || !result) {
+          console.error('[cloudinary] upload error:', error)
+          return reject(error ?? new Error('Upload gagal'))
+        }
+        console.log('[cloudinary] upload success:', result.secure_url)
         resolve(result)
       }
     )
@@ -64,6 +74,8 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     if (!file) return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 400 })
+
+    console.log('[upload] file:', { name: file.name, type: file.type, size: file.size })
 
     const baseMime = getBaseMime(file.type)
     const isImage  = ALLOWED_IMAGE.includes(baseMime)
@@ -84,21 +96,20 @@ export async function POST(req: NextRequest) {
     const folderParam = (formData.get('folder') as string | null) ?? 'chat'
     const folder      = ALLOWED_FOLDERS.includes(folderParam) ? folderParam : 'chat'
 
+    console.log('[upload] folder:', folder)
+
     const bytes  = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const now       = new Date()
-    const subdir    = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const now        = new Date()
+    const subdir     = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const typeFolder = isImage ? 'images' : 'voices'
-
-    // Cloudinary folder path: sidesa/chat/voices/2026-03
     const cloudFolder = `sidesa/${folder}/${typeFolder}/${subdir}`
-
-    // public_id tanpa extension (Cloudinary handle sendiri)
-    const publicId = `${session.userId}-${Date.now()}`
-
-    const resourceType = isImage ? 'image' : 'video' // Cloudinary pakai 'video' untuk audio
+    const publicId    = `${session.userId}-${Date.now()}`
+    const resourceType = isImage ? 'image' : 'video'
     const format       = isImage ? undefined : getAudioExt(baseMime)
+
+    console.log('[upload] uploading to cloudinary...', { cloudFolder, publicId, resourceType })
 
     const result = await uploadToCloudinary(buffer, {
       folder:       cloudFolder,
@@ -106,6 +117,8 @@ export async function POST(req: NextRequest) {
       resourceType,
       format,
     })
+
+    console.log('[upload] done:', result.secure_url)
 
     return NextResponse.json({ success: true, url: result.secure_url })
   } catch (e) {
