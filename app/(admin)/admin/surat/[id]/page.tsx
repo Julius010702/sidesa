@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+
 import Link from 'next/link'
 import { formatTanggal, formatTanggalJam, getStatusColor, getStatusLabel } from '@/lib/utils'
-// ✅ FIX: Removed unused 'JENIS_SURAT_OPTIONS' import to fix @typescript-eslint/no-unused-vars
 import HeaderPage from '@/components/layout/HeaderPage'
 
 interface SuratData {
@@ -33,7 +32,6 @@ export default function AdminSuratDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const router = useRouter()
   const [surat, setSurat] = useState<SuratData | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -95,9 +93,21 @@ export default function AdminSuratDetailPage({
         return
       }
 
-      setSuccess(`Status berhasil diubah ke ${getStatusLabel(newStatus)}`)
+      // ✅ Update state lokal — TIDAK pakai router.refresh() yang menyebabkan crash
       setSurat(data.data)
-      router.refresh()
+      setSuccess(`Status berhasil diubah ke ${getStatusLabel(newStatus)}`)
+
+      // Update form dengan data terbaru
+      setForm((prev) => ({
+        ...prev,
+        nomorSurat: data.data.nomorSurat ?? prev.nomorSurat,
+        catatanAdmin: data.data.catatanAdmin ?? prev.catatanAdmin,
+        suratJadiUrl: data.data.suratJadiUrl ?? prev.suratJadiUrl,
+      }))
+
+      // Auto hilangkan pesan sukses setelah 3 detik
+      setTimeout(() => setSuccess(''), 3000)
+
     } catch {
       setError('Terjadi kesalahan server')
     } finally {
@@ -248,7 +258,7 @@ export default function AdminSuratDetailPage({
                     value={form.nomorSurat}
                     onChange={(e) => setForm((p) => ({ ...p, nomorSurat: e.target.value }))}
                     placeholder="Contoh: 001/DOM/DESA/01/2025"
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -261,7 +271,7 @@ export default function AdminSuratDetailPage({
                     value={form.suratJadiUrl}
                     onChange={(e) => setForm((p) => ({ ...p, suratJadiUrl: e.target.value }))}
                     placeholder="https://..."
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -275,7 +285,7 @@ export default function AdminSuratDetailPage({
                     onChange={(e) => setForm((p) => ({ ...p, catatanAdmin: e.target.value }))}
                     rows={3}
                     placeholder="Catatan atau alasan penolakan..."
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -295,7 +305,15 @@ export default function AdminSuratDetailPage({
                         disabled={submitting}
                         className={`w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${opt.color}`}
                       >
-                        {submitting ? 'Memproses...' : opt.label}
+                        {submitting ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Memproses...
+                          </span>
+                        ) : opt.label}
                       </button>
                     ))}
                 </div>
