@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { v2 as cloudinary } from 'cloudinary'
 
+// ── Tambah image/gif untuk support GIF & stiker ──
 const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 const ALLOWED_AUDIO_BASE = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav']
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024
@@ -13,12 +14,6 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-console.log('[cloudinary config]', {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ?? 'MISSING',
-  api_key:    process.env.CLOUDINARY_API_KEY ? 'SET' : 'MISSING',
-  api_secret: process.env.CLOUDINARY_API_SECRET ? 'SET' : 'MISSING',
 })
 
 function getBaseMime(mimeType: string): string {
@@ -43,6 +38,8 @@ function uploadToCloudinary(
     publicId: string
     resourceType: 'image' | 'video' | 'raw' | 'auto'
     format?: string
+    // GIF harus pakai flags: 'anim' agar animasi tetap jalan
+    isAnimated?: boolean
   }
 ): Promise<{ secure_url: string }> {
   return new Promise((resolve, reject) => {
@@ -52,13 +49,14 @@ function uploadToCloudinary(
         public_id:     options.publicId,
         resource_type: options.resourceType,
         format:        options.format,
+        // Untuk GIF animasi: jangan convert, biarkan tetap GIF
+        ...(options.isAnimated ? { flags: 'anim', format: 'gif' } : {}),
       },
       (error, result) => {
         if (error || !result) {
           console.error('[cloudinary] upload error:', error)
           return reject(error ?? new Error('Upload gagal'))
         }
-        console.log('[cloudinary] upload success:', result.secure_url)
         resolve(result)
       }
     )
@@ -75,14 +73,12 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null
     if (!file) return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 400 })
 
-    console.log('[upload] file:', { name: file.name, type: file.type, size: file.size })
-
     const baseMime = getBaseMime(file.type)
     const isImage  = ALLOWED_IMAGE.includes(baseMime)
     const isAudio  = ALLOWED_AUDIO_BASE.includes(baseMime)
+    const isGif    = baseMime === 'image/gif'
 
     if (!isImage && !isAudio) {
-      console.warn(`[upload] MIME type tidak didukung: "${file.type}" (base: "${baseMime}")`)
       return NextResponse.json({ error: `Tipe file tidak didukung: ${file.type}` }, { status: 400 })
     }
 
@@ -96,29 +92,24 @@ export async function POST(req: NextRequest) {
     const folderParam = (formData.get('folder') as string | null) ?? 'chat'
     const folder      = ALLOWED_FOLDERS.includes(folderParam) ? folderParam : 'chat'
 
-    console.log('[upload] folder:', folder)
-
     const bytes  = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const now        = new Date()
-    const subdir     = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    const typeFolder = isImage ? 'images' : 'voices'
+    const now         = new Date()
+    const subdir      = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const typeFolder  = isImage ? 'images' : 'voices'
     const cloudFolder = `sidesa/${folder}/${typeFolder}/${subdir}`
     const publicId    = `${session.userId}-${Date.now()}`
     const resourceType = isImage ? 'image' : 'video'
     const format       = isImage ? undefined : getAudioExt(baseMime)
 
-    console.log('[upload] uploading to cloudinary...', { cloudFolder, publicId, resourceType })
-
     const result = await uploadToCloudinary(buffer, {
-      folder:       cloudFolder,
+      folder: cloudFolder,
       publicId,
       resourceType,
       format,
+      isAnimated: isGif, // GIF animasi tetap jalan
     })
-
-    console.log('[upload] done:', result.secure_url)
 
     return NextResponse.json({ success: true, url: result.secure_url })
   } catch (e) {

@@ -50,22 +50,16 @@ export default function AdminChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // ── Upload helper ──────────────────────────────────────────
   const uploadFile = async (file: File | Blob, filename?: string): Promise<string> => {
     const form = new FormData()
-    const name = filename || (file instanceof File ? file.name : `file-${Date.now()}`)
-    form.append('file', file, name)
+    form.append('file', file, filename || (file instanceof File ? file.name : `file-${Date.now()}`))
     const res = await fetch('/api/upload', { method: 'POST', body: form })
-    if (!res.ok) {
-      const errText = await res.text()
-      throw new Error(`Upload gagal: ${res.status} - ${errText}`)
-    }
+    if (!res.ok) throw new Error(`Upload gagal: ${res.status}`)
     const data = await res.json()
-    if (!data.url) throw new Error('URL tidak ditemukan dalam response')
+    if (!data.url) throw new Error('URL tidak ditemukan')
     return data.url as string
   }
 
-  // ── Send handlers ──────────────────────────────────────────
   const handleSendText = async (pesan: string) => {
     if (!selectedUser) return
     await fetch('/api/chat', {
@@ -87,8 +81,8 @@ export default function AdminChatPage() {
       })
       fetchMessages(selectedUser.userId)
     } catch (e) {
-      console.error('Gagal kirim gambar:', e)
-      alert('Gagal mengirim gambar. Coba lagi.')
+      console.error(e)
+      alert('Gagal mengirim gambar.')
     }
   }
 
@@ -104,26 +98,32 @@ export default function AdminChatPage() {
       })
       fetchMessages(selectedUser.userId)
     } catch (e) {
-      console.error('Gagal kirim voice:', e)
-      alert('Gagal mengirim voice note. Coba lagi.')
+      console.error(e)
+      alert('Gagal mengirim voice note.')
     }
   }
 
-  const handleSelectUser = (u: ChatUser) => {
-    setSelectedUser(u)
-    setShowSidebar(false) // Mobile: pindah ke chat view
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!selectedUser) return
+    const prev = messages
+    setMessages((m) => m.filter((x) => x.id !== messageId))
+    try {
+      const res = await fetch(`/api/chat?id=${messageId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const e = await res.json()
+        throw new Error(e.error)
+      }
+      fetchUsers()
+    } catch (e) {
+      setMessages(prev)
+      alert(e instanceof Error ? e.message : 'Gagal menghapus pesan')
+    }
   }
 
   return (
-    // Gunakan 100dvh untuk support mobile browser chrome bar
     <div className="flex w-full overflow-hidden" style={{ height: 'calc(100dvh - 7rem)' }}>
 
-      {/* ── Sidebar ── */}
-      <div className={`
-        ${showSidebar ? 'flex' : 'hidden'} md:flex
-        flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden shrink-0
-        w-full md:w-64 lg:w-72
-      `}>
+      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden shrink-0 w-full md:w-64 lg:w-72`}>
         <div className="px-4 py-3 border-b border-gray-100 shrink-0">
           <h2 className="font-semibold text-gray-900 text-sm">Pesan Masuk</h2>
           <p className="text-xs text-gray-400 mt-0.5">{users.length} percakapan</p>
@@ -131,50 +131,38 @@ export default function AdminChatPage() {
         <div className="flex-1 overflow-y-auto divide-y divide-gray-50 min-h-0">
           {users.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-400">Belum ada pesan</div>
-          ) : (
-            users.map(u => (
-              <button
-                key={u.userId}
-                onClick={() => handleSelectUser(u)}
-                className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${selectedUser?.userId === u.userId ? 'bg-blue-50' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-700 shrink-0">
-                    {u.nama.charAt(0)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs font-semibold text-gray-800 truncate">{u.nama}</p>
-                      {u.unread > 0 && (
-                        <span className="shrink-0 w-5 h-5 bg-blue-600 text-white rounded-full text-xs font-bold flex items-center justify-center">
-                          {u.unread}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-400 truncate">{u.lastMessage || '📎 Media'}</p>
-                  </div>
+          ) : users.map(u => (
+            <button
+              key={u.userId}
+              onClick={() => { setSelectedUser(u); setShowSidebar(false) }}
+              className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${selectedUser?.userId === u.userId ? 'bg-blue-50' : ''}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-700 shrink-0">
+                  {u.nama.charAt(0)}
                 </div>
-              </button>
-            ))
-          )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs font-semibold text-gray-800 truncate">{u.nama}</p>
+                    {u.unread > 0 && (
+                      <span className="shrink-0 w-5 h-5 bg-blue-600 text-white rounded-full text-xs font-bold flex items-center justify-center">
+                        {u.unread}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 truncate">{u.lastMessage || '📎 Media'}</p>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* ── Chat area ── */}
-      <div className={`
-        ${!showSidebar ? 'flex' : 'hidden'} md:flex
-        flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden flex-1 min-w-0
-        md:ml-4
-      `}>
+      <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden flex-1 min-w-0 md:ml-4`}>
         {selectedUser ? (
           <>
-            {/* Header */}
             <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
-              {/* Tombol back untuk mobile */}
-              <button
-                onClick={() => setShowSidebar(true)}
-                className="md:hidden w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-600"
-              >
+              <button onClick={() => setShowSidebar(true)} className="md:hidden w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-600">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -182,13 +170,13 @@ export default function AdminChatPage() {
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-700 shrink-0">
                 {selectedUser.nama.charAt(0)}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold text-gray-900 text-sm truncate">{selectedUser.nama}</p>
                 <p className="text-xs text-green-500">● Online</p>
               </div>
+              <p className="text-xs text-gray-400">{messages.length} pesan</p>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 min-h-0">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-8 text-gray-400">
@@ -203,6 +191,8 @@ export default function AdminChatPage() {
                       msg={msg}
                       isSelf={msg.isFromAdmin}
                       senderLabel={selectedUser.nama}
+                      onDelete={handleDeleteMessage}
+                      deleteLabel="Hapus dari chat ini?"
                     />
                   ))}
                   <div ref={bottomRef} />
@@ -210,13 +200,8 @@ export default function AdminChatPage() {
               )}
             </div>
 
-            {/* Input */}
             <div className="px-3 py-3 border-t border-gray-100 shrink-0">
-              <ChatInput
-                onSendText={handleSendText}
-                onSendImage={handleSendImage}
-                onSendVoice={handleSendVoice}
-              />
+              <ChatInput onSendText={handleSendText} onSendImage={handleSendImage} onSendVoice={handleSendVoice} />
             </div>
           </>
         ) : (

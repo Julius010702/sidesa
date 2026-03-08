@@ -128,18 +128,20 @@ export async function DELETE(
     if (!existing) return NextResponse.json({ error: 'Penduduk tidak ditemukan' }, { status: 404 })
 
     await prisma.$transaction(async (tx) => {
-      // 1. Soft delete penduduk — data tetap ada tapi tidak aktif
-      await tx.penduduk.update({
-        where: { id },
-        data: { statusHidup: false },
-      })
-
-      // 2. Hapus akun user yang terhubung (jika ada dan bukan akun admin)
       if (existing.user && !ADMIN_ROLES.includes(existing.user.role)) {
-        // Hapus notifikasi user dulu (foreign key constraint)
+        // Urutan wajib karena FK: penduduk → user
+        // 1. Hapus penduduk dulu (memutus FK penduduk_userId_fkey)
+        await tx.penduduk.delete({ where: { id } })
+        // 2. Hapus notifikasi user
         await tx.notifikasi.deleteMany({ where: { userId: existing.user.id } })
-        // Hapus akun user
+        // 3. Baru hapus user — FK sudah tidak ada
         await tx.user.delete({ where: { id: existing.user.id } })
+      } else {
+        // Tidak ada user terhubung → soft delete saja
+        await tx.penduduk.update({
+          where: { id },
+          data: { statusHidup: false },
+        })
       }
     })
 

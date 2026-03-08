@@ -20,19 +20,18 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
   const [showCameraChoice, setShowCameraChoice] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const cameraInputRef = useRef<HTMLInputElement>(null)   // capture="camera" → kamera native
-  const galleryInputRef = useRef<HTMLInputElement>(null)  // tanpa capture → galeri
+  const fileInputRef    = useRef<HTMLInputElement>(null)
+  const cameraInputRef  = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const audioChunksRef  = useRef<Blob[]>([])
+  const timerRef        = useRef<ReturnType<typeof setInterval> | null>(null)
+  const videoRef        = useRef<HTMLVideoElement>(null)
+  const canvasRef       = useRef<HTMLCanvasElement>(null)
 
   const handleSend = async () => {
     if (sending) return
     setUploadError(null)
-
     if (imagePreview) {
       setSending(true)
       try {
@@ -46,7 +45,6 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
       }
       return
     }
-
     const t = text.trim()
     if (!t) return
     setSending(true)
@@ -61,28 +59,22 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/')) { alert('Hanya file gambar yang didukung'); return }
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowed.includes(file.type)) { alert('Format didukung: JPG, PNG, WebP, GIF'); return }
     if (file.size > 5 * 1024 * 1024) { alert('Ukuran gambar maksimal 5MB'); return }
-    const url = URL.createObjectURL(file)
-    setImagePreview({ file, url })
+    setImagePreview({ file, url: URL.createObjectURL(file) })
     e.target.value = ''
   }
 
   const openCamera = async () => {
     const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-    if (isMobile) {
-      setShowCameraChoice(true)
-      return
-    }
+    if (isMobile) { setShowCameraChoice(true); return }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       setCameraStream(stream)
@@ -90,9 +82,7 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
       setTimeout(() => {
         if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play() }
       }, 100)
-    } catch {
-      fileInputRef.current?.click()
-    }
+    } catch { fileInputRef.current?.click() }
   }
 
   const captureFromWebcam = () => {
@@ -139,9 +129,7 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
       setRecording(true)
       setRecordSeconds(0)
       timerRef.current = setInterval(() => setRecordSeconds(s => s + 1), 1000)
-    } catch {
-      alert('Tidak dapat mengakses mikrofon. Pastikan izin mikrofon diberikan.')
-    }
+    } catch { alert('Tidak dapat mengakses mikrofon. Pastikan izin mikrofon diberikan.') }
   }
 
   const stopRecording = () => {
@@ -166,48 +154,34 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
 
   const canSend = !sending && (!!text.trim() || !!imagePreview)
+  const isGifPreview = imagePreview?.file.type === 'image/gif'
 
   return (
     <div className="flex flex-col gap-2 w-full">
 
-      {/* ── Popup pilihan: Ambil Foto / Pilih Galeri ── */}
+      {/* Popup pilihan kamera / galeri (mobile) */}
       {showCameraChoice && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
-          onClick={() => setShowCameraChoice(false)}
-        >
-          <div
-            className="w-full max-w-sm bg-white rounded-t-2xl p-4 pb-8"
-            onClick={e => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowCameraChoice(false)}>
+          <div className="w-full max-w-sm bg-white rounded-t-2xl p-4 pb-8" onClick={e => e.stopPropagation()}>
             <p className="text-sm font-semibold text-gray-700 text-center mb-4">Pilih Sumber Gambar</p>
             <div className="flex gap-3">
-              <button
-                onClick={() => { setShowCameraChoice(false); cameraInputRef.current?.click() }}
-                className="flex-1 flex flex-col items-center gap-2 py-5 bg-blue-50 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors"
-              >
+              <button onClick={() => { setShowCameraChoice(false); cameraInputRef.current?.click() }}
+                className="flex-1 flex flex-col items-center gap-2 py-5 bg-blue-50 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors">
                 <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span className="text-xs font-semibold">Ambil Foto</span>
               </button>
-              <button
-                onClick={() => { setShowCameraChoice(false); galleryInputRef.current?.click() }}
-                className="flex-1 flex flex-col items-center gap-2 py-5 bg-gray-50 rounded-2xl text-gray-600 hover:bg-gray-100 transition-colors"
-              >
+              <button onClick={() => { setShowCameraChoice(false); galleryInputRef.current?.click() }}
+                className="flex-1 flex flex-col items-center gap-2 py-5 bg-gray-50 rounded-2xl text-gray-600 hover:bg-gray-100 transition-colors">
                 <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className="text-xs font-semibold">Pilih Galeri</span>
               </button>
             </div>
-            <button
-              onClick={() => setShowCameraChoice(false)}
-              className="w-full mt-4 py-2.5 text-sm text-gray-400 hover:text-gray-600"
-            >
-              Batal
-            </button>
+            <button onClick={() => setShowCameraChoice(false)} className="w-full mt-4 py-2.5 text-sm text-gray-400 hover:text-gray-600">Batal</button>
           </div>
         </div>
       )}
@@ -221,15 +195,15 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
         </div>
       )}
 
-      {/* Image preview */}
+      {/* Image / GIF preview */}
       {imagePreview && (
         <div className="flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-100 rounded-xl">
-          <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0">
+          <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imagePreview.url} alt="preview" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0 text-xs text-blue-700">
-            <p className="font-medium">📎 Gambar terpilih</p>
+            <p className="font-medium">{isGifPreview ? '🎭 GIF / Stiker' : '📎 Gambar terpilih'}</p>
             <p className="text-blue-400 truncate">{imagePreview.file.name}</p>
           </div>
           <button
@@ -239,7 +213,7 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
         </div>
       )}
 
-      {/* Webcam overlay (desktop only) */}
+      {/* Webcam overlay (desktop) */}
       {showCamera && (
         <div className="relative bg-black rounded-xl overflow-hidden">
           <video ref={videoRef} className="w-full max-h-40 object-cover" autoPlay playsInline muted />
@@ -252,31 +226,24 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
       )}
 
       {/* Hidden inputs */}
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-      {/* Tanpa capture — iOS akan munculkan dialog native: Take Photo / Photo Library */}
-      <input ref={cameraInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-      <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef}    type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleFileChange} />
+      <input ref={cameraInputRef}  type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleFileChange} />
+      <input ref={galleryInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleFileChange} />
 
       {/* Main input row */}
       <div className="flex items-end gap-1.5 w-full">
         {!recording && (
           <div className="flex gap-1 shrink-0">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={disabled || sending || recording}
-              title="Kirim gambar"
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-40"
-            >
+            <button onClick={() => fileInputRef.current?.click()} disabled={disabled || sending || recording}
+              title="Kirim gambar / GIF"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-40">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </button>
-            <button
-              onClick={openCamera}
-              disabled={disabled || sending || recording}
+            <button onClick={openCamera} disabled={disabled || sending || recording}
               title="Kamera"
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-40"
-            >
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-40">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -317,8 +284,7 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
                 </svg>
               </button>
             ) : (
-              <button onClick={startRecording}
-                disabled={disabled || sending || !!text.trim() || !!imagePreview}
+              <button onClick={startRecording} disabled={disabled || sending || !!text.trim() || !!imagePreview}
                 title="Rekam voice note"
                 className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-30">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -327,7 +293,6 @@ export default function ChatInput({ onSendText, onSendImage, onSendVoice, disabl
               </button>
             )
           )}
-
           {!recording && (
             <button onClick={handleSend} disabled={!canSend}
               className="w-9 h-9 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-40">

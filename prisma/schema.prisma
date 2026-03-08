@@ -1,4 +1,8 @@
 // prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -300,16 +304,17 @@ model Notifikasi {
   @@map("notifikasi")
 }
 
-// ✅ FIXED: ditambahkan field tipe dan mediaUrl
 model ChatMessage {
-  id          String   @id @default(cuid())
-  userId      String
-  pesan       String
-  tipe        String   @default("text")
-  mediaUrl    String?
-  isFromAdmin Boolean  @default(false)
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  pesan          String
+  tipe           String   @default("text")
+  mediaUrl       String?
+  isFromAdmin    Boolean  @default(false)
+  isRead         Boolean  @default(false)
+  deletedByUser  Boolean  @default(false)
+  deletedByAdmin Boolean  @default(false)
+  createdAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
