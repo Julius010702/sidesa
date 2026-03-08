@@ -140,11 +140,11 @@ export default function AjukanSuratPage() {
               name="jenisSurat"
               value={form.jenisSurat}
               onChange={handleChange}
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm bg-white
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm text-gray-900 bg-white
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
                 transition-all ${fieldErrors.jenisSurat ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
             >
-              <option value="">-- Pilih jenis surat --</option>
+              <option value="" className="text-gray-400">-- Pilih jenis surat --</option>
               {JENIS_SURAT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
@@ -183,9 +183,9 @@ export default function AjukanSuratPage() {
               onChange={handleChange}
               rows={4}
               placeholder="Jelaskan keperluan pengajuan surat ini secara singkat dan jelas..."
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm resize-none
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm text-gray-900 bg-white resize-none
                 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-                transition-all placeholder:text-gray-300
+                transition-all placeholder:text-gray-400
                 ${fieldErrors.keperluan ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
             />
             <div className="flex justify-between items-center mt-1">
