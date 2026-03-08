@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [showPassword, setShowPassword] = useState(false)
+  const [successInfo, setSuccessInfo] = useState<{ isVerified: boolean; message: string } | null>(null)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
@@ -69,7 +70,14 @@ export default function RegisterPage() {
         setError(data.error || 'Registrasi gagal')
         return
       }
-      router.push('/login?registered=1')
+
+      // Tampilkan pesan berdasarkan status verifikasi
+      setSuccessInfo({ isVerified: data.isVerified, message: data.message })
+
+      // Jika langsung terverifikasi, redirect ke login setelah 3 detik
+      if (data.isVerified) {
+        setTimeout(() => router.push('/login?registered=1'), 3000)
+      }
     } catch {
       setError('Terjadi kesalahan, periksa koneksi Anda')
     } finally {
@@ -109,6 +117,71 @@ export default function RegisterPage() {
       required: false,
     },
   ]
+
+  // ✅ Tampilan sukses
+  if (successInfo) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl shadow-gray-100 border border-gray-100 p-8 text-center">
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+          successInfo.isVerified ? 'bg-green-100' : 'bg-amber-100'
+        }`}>
+          {successInfo.isVerified ? (
+            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+        </div>
+
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          {successInfo.isVerified ? 'Registrasi Berhasil!' : 'Menunggu Verifikasi'}
+        </h2>
+
+        <p className="text-sm text-gray-600 mb-5">{successInfo.message}</p>
+
+        {successInfo.isVerified ? (
+          <div>
+            <p className="text-xs text-gray-400 mb-4">Mengarahkan ke halaman login...</p>
+            <Link
+              href="/login"
+              className="inline-block bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors"
+            >
+              Masuk Sekarang
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
+              <p className="text-xs font-semibold text-amber-800 mb-2">Apa yang terjadi selanjutnya?</p>
+              <ul className="text-xs text-amber-700 space-y-1.5">
+                <li className="flex gap-2">
+                  <span>1.</span>
+                  <span>Admin desa akan menerima notifikasi pendaftaran Anda</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>2.</span>
+                  <span>Admin akan mencocokkan NIK Anda dengan data kependudukan</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>3.</span>
+                  <span>Setelah diverifikasi, Anda akan mendapat notifikasi dan dapat login</span>
+                </li>
+              </ul>
+            </div>
+            <Link
+              href="/login"
+              className="inline-block border border-gray-200 text-gray-600 px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Kembali ke Login
+            </Link>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-xl shadow-gray-100 border border-gray-100 p-8">
@@ -177,11 +250,8 @@ export default function RegisterPage() {
                 transition-all placeholder:text-gray-300
                 ${fieldErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
+            <button type="button" onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
               {showPassword ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -194,9 +264,7 @@ export default function RegisterPage() {
               )}
             </button>
           </div>
-          {fieldErrors.password && (
-            <p className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>
-          )}
+          {fieldErrors.password && <p className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>}
         </div>
 
         {/* Konfirmasi Password */}
