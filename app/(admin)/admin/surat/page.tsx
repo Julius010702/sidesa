@@ -52,9 +52,7 @@ export default async function AdminSuratPage({ searchParams }: PageProps) {
   const { status, q } = await searchParams
   const suratList = await getSuratList(status, q)
 
-  // Hitung per status untuk badge
   const allSurat = await prisma.surat.findMany({ select: { status: true } })
-  // ✅ FIX: Added explicit type annotation to fix TS7006 implicit any
   const countByStatus = (s: string) => allSurat.filter((x: { status: string }) => x.status === s).length
 
   return (
@@ -76,7 +74,7 @@ export default async function AdminSuratPage({ searchParams }: PageProps) {
             name="q"
             defaultValue={q}
             placeholder="Cari nama, NIK, keperluan..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </form>
@@ -109,18 +107,15 @@ export default async function AdminSuratPage({ searchParams }: PageProps) {
         })}
       </div>
 
-      {/* Tabel / List */}
       {suratList.length === 0 ? (
         <div className="bg-white border border-gray-100 rounded-2xl px-6 py-16 text-center">
           <div className="text-5xl mb-3">📭</div>
-          {/* ✅ FIX: Replaced raw " with &ldquo; and &rdquo; to fix react/no-unescaped-entities */}
           <p className="text-gray-500 font-medium">
             {q ? <>Tidak ada hasil untuk &ldquo;{q}&rdquo;</> : 'Belum ada surat masuk'}
           </p>
         </div>
       ) : (
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-          {/* Header tabel */}
           <div className="hidden sm:grid grid-cols-12 gap-3 px-5 py-3 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             <div className="col-span-4">Warga</div>
             <div className="col-span-3">Jenis Surat</div>
@@ -132,7 +127,6 @@ export default async function AdminSuratPage({ searchParams }: PageProps) {
           <div className="divide-y divide-gray-50">
             {suratList.map((s: SuratItem) => (
               <div key={s.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 px-5 py-4 hover:bg-gray-50/50 transition-colors items-center">
-                {/* Warga */}
                 <div className="sm:col-span-4 flex items-center gap-3">
                   <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
                     <span className="text-blue-600 font-bold text-xs">
@@ -144,29 +138,21 @@ export default async function AdminSuratPage({ searchParams }: PageProps) {
                     <p className="text-xs text-gray-400 font-mono">{s.user.nik}</p>
                   </div>
                 </div>
-
-                {/* Jenis */}
                 <div className="sm:col-span-3">
                   <p className="text-sm text-gray-700">{getStatusLabel(s.jenisSurat)}</p>
                   <p className="text-xs text-gray-400 truncate">{s.keperluan}</p>
                 </div>
-
-                {/* Tanggal */}
                 <div className="sm:col-span-2">
                   <p className="text-xs text-gray-600">{formatTanggal(s.tanggalDiajukan, 'dd MMM yyyy')}</p>
                   {s.nomorSurat && (
                     <p className="text-xs text-gray-400 font-mono truncate">{s.nomorSurat}</p>
                   )}
                 </div>
-
-                {/* Status */}
                 <div className="sm:col-span-2">
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusColor(s.status)}`}>
                     {getStatusLabel(s.status)}
                   </span>
                 </div>
-
-                {/* Aksi */}
                 <div className="sm:col-span-1 flex justify-end">
                   <Link
                     href={`/admin/surat/${s.id}`}
@@ -182,7 +168,6 @@ export default async function AdminSuratPage({ searchParams }: PageProps) {
             ))}
           </div>
 
-          {/* Footer count */}
           <div className="px-5 py-3 bg-gray-50 border-t border-gray-100">
             <p className="text-xs text-gray-400">
               Menampilkan <span className="font-semibold text-gray-600">{suratList.length}</span> surat

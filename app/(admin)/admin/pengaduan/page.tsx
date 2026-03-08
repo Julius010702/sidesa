@@ -62,7 +62,6 @@ export default async function AdminPengaduanPage({ searchParams }: PageProps) {
   const list = await getPengaduanList(status, q)
 
   const allPengaduan = await prisma.pengaduan.findMany({ select: { status: true } })
-  // ✅ FIX: Added explicit type annotation to fix TS7006 implicit any
   const countByStatus = (s: string) => allPengaduan.filter((x: { status: string }) => x.status === s).length
 
   return (
@@ -84,7 +83,7 @@ export default async function AdminPengaduanPage({ searchParams }: PageProps) {
             name="q"
             defaultValue={q}
             placeholder="Cari judul, lokasi, atau nama warga..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
       </form>
@@ -132,20 +131,15 @@ export default async function AdminPengaduanPage({ searchParams }: PageProps) {
               href={`/admin/pengaduan/${p.id}`}
               className="flex items-center gap-4 bg-white border border-gray-100 rounded-2xl px-5 py-4 hover:shadow-md hover:border-gray-200 transition-all group"
             >
-              {/* Prioritas indicator */}
               <div className={`w-1 self-stretch rounded-full shrink-0 ${
                 p.prioritas <= 1 ? 'bg-red-500' :
                 p.prioritas === 2 ? 'bg-orange-400' :
                 p.prioritas === 3 ? 'bg-yellow-400' :
                 'bg-gray-200'
               }`} />
-
-              {/* Kategori icon */}
               <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-lg shrink-0 group-hover:bg-orange-100 transition-colors">
                 {kategoriIcon[p.kategori] ?? '📋'}
               </div>
-
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-gray-800 text-sm truncate">{p.judul}</p>
@@ -162,8 +156,6 @@ export default async function AdminPengaduanPage({ searchParams }: PageProps) {
                   {formatTanggal(p.tanggalLapor, 'dd MMM yyyy')}
                 </p>
               </div>
-
-              {/* Status + arrow */}
               <div className="flex items-center gap-2 shrink-0">
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusColor(p.status)}`}>
                   {getStatusLabel(p.status)}

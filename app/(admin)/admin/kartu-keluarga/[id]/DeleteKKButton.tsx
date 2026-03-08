@@ -37,15 +37,15 @@ export default function DeleteKKButton({ id, bisaDihapus }: DeleteKKButtonProps)
       <div className="relative group">
         <button
           disabled
-          className="inline-flex items-center gap-2 bg-gray-50 text-gray-400 border border-gray-200 px-4 py-2 rounded-xl text-sm font-semibold cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 bg-gray-50 text-gray-400 border border-gray-200 px-3 py-2 rounded-xl text-sm font-semibold cursor-not-allowed"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
-          Hapus KK
+          <span className="hidden sm:inline">Hapus KK</span>
         </button>
-        <div className="absolute right-0 top-full mt-1 w-52 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-          Hapus semua anggota terlebih dahulu sebelum menghapus KK
+        <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          Hapus semua anggota terlebih dahulu
         </div>
       </div>
     )
@@ -55,15 +55,14 @@ export default function DeleteKKButton({ id, bisaDihapus }: DeleteKKButtonProps)
     <>
       <button
         onClick={() => setShowConfirm(true)}
-        className="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors"
+        className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        Hapus KK
+        <span className="hidden sm:inline">Hapus KK</span>
       </button>
 
-      {/* Modal Konfirmasi */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">

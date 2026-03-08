@@ -24,7 +24,6 @@ interface UserItem {
 
 type Tab = 'incomplete' | 'all'
 
-// Cek apakah data penduduk masih placeholder (belum dilengkapi)
 function isDataIncomplete(user: UserItem): boolean {
   if (!user.penduduk) return false
   return user.penduduk.keterangan?.includes('belum lengkap') ?? false
@@ -40,7 +39,6 @@ export default function AdminUsersPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
-    // Tampilkan semua user, kita filter di frontend
     if (search) params.set('q', search)
     try {
       const res = await fetch(`/api/admin/users?${params}`)
@@ -99,7 +97,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  // Filter berdasarkan tab
   const filteredUsers = users.filter((u) => {
     if (tab === 'incomplete') return isDataIncomplete(u) || !u.isVerified
     return true
@@ -157,7 +154,7 @@ export default function AdminUsersPage() {
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && fetchUsers()}
             placeholder="Cari nama, NIK, atau email..."
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <button onClick={fetchUsers} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
@@ -195,7 +192,6 @@ export default function AdminUsersPage() {
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-          {/* Header kolom */}
           <div className="hidden lg:grid grid-cols-12 gap-3 px-5 py-3 bg-gray-50 border-b border-gray-200">
             <div className="col-span-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Nama / NIK</div>
             <div className="col-span-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</div>
@@ -211,7 +207,6 @@ export default function AdminUsersPage() {
                 <div key={user.id} className={`grid grid-cols-1 lg:grid-cols-12 gap-3 px-5 py-4 items-start transition-colors ${
                   incomplete ? 'bg-amber-50/30 hover:bg-amber-50/60' : 'hover:bg-gray-50/50'
                 }`}>
-                  {/* Nama & NIK */}
                   <div className="lg:col-span-3">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-gray-900">{user.nama}</p>
@@ -227,13 +222,11 @@ export default function AdminUsersPage() {
                     </p>
                   </div>
 
-                  {/* Email */}
                   <div className="lg:col-span-3">
                     <p className="text-sm text-gray-700 break-all">{user.email}</p>
                     {user.noHp && <p className="text-xs text-gray-400 mt-0.5">{user.noHp}</p>}
                   </div>
 
-                  {/* Status Akun */}
                   <div className="lg:col-span-2 flex flex-col gap-1.5">
                     <span className={`inline-flex w-fit text-xs font-semibold px-2 py-0.5 rounded-full ${
                       user.isVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
@@ -247,14 +240,9 @@ export default function AdminUsersPage() {
                     </span>
                   </div>
 
-                  {/* Data Penduduk */}
                   <div className="lg:col-span-2">
                     {user.penduduk ? (
-                      <div className={`border rounded-lg p-2 ${
-                        incomplete
-                          ? 'bg-amber-50 border-amber-200'
-                          : 'bg-green-50 border-green-200'
-                      }`}>
+                      <div className={`border rounded-lg p-2 ${incomplete ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
                         <p className={`text-xs font-semibold ${incomplete ? 'text-amber-800' : 'text-green-800'}`}>
                           {incomplete ? '⚠ Data belum lengkap' : '✓ Data lengkap'}
                         </p>
@@ -269,9 +257,7 @@ export default function AdminUsersPage() {
                     )}
                   </div>
 
-                  {/* Aksi */}
                   <div className="lg:col-span-2 flex flex-col gap-1.5">
-                    {/* Tombol lengkapi data — arahkan ke halaman edit penduduk */}
                     {user.penduduk && incomplete && (
                       <Link
                         href={`/admin/penduduk/${user.penduduk.id}/edit`}
@@ -280,8 +266,6 @@ export default function AdminUsersPage() {
                         ✏️ Lengkapi Data
                       </Link>
                     )}
-
-                    {/* Verifikasi akun */}
                     {!user.isVerified && (
                       <button
                         disabled={processingId === user.id}
@@ -291,8 +275,6 @@ export default function AdminUsersPage() {
                         ✓ Verifikasi Akun
                       </button>
                     )}
-
-                    {/* Lihat detail penduduk */}
                     {user.penduduk && (
                       <Link
                         href={`/admin/penduduk/${user.penduduk.id}`}
@@ -301,8 +283,6 @@ export default function AdminUsersPage() {
                         👁 Lihat Data
                       </Link>
                     )}
-
-                    {/* Aktif/nonaktif */}
                     <button
                       disabled={processingId === user.id}
                       onClick={() => handleToggleActive(user.id)}
@@ -310,8 +290,6 @@ export default function AdminUsersPage() {
                     >
                       {user.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                     </button>
-
-                    {/* Hapus akun */}
                     <button
                       disabled={processingId === user.id}
                       onClick={() => handleDelete(user.id, user.nama)}

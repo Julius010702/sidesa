@@ -176,7 +176,6 @@ export default function AdminPengaduanDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Info pengaduan */}
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
@@ -212,7 +211,6 @@ export default function AdminPengaduanDetailPage({
               <p className="text-sm text-gray-700 leading-relaxed">{data.deskripsi}</p>
             </div>
 
-            {/* Foto pelapor */}
             {data.fotoUrl && (
               <div className="mt-4">
                 <p className="text-xs font-semibold text-gray-600 mb-2">Foto dari Pelapor</p>
@@ -237,7 +235,7 @@ export default function AdminPengaduanDetailPage({
                   <select
                     value={form.prioritas}
                     onChange={(e) => setForm((p) => ({ ...p, prioritas: parseInt(e.target.value) }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
                   >
                     {PRIORITAS_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -247,45 +245,38 @@ export default function AdminPengaduanDetailPage({
 
                 {/* Assigned to */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    Ditugaskan ke
-                  </label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Ditugaskan ke</label>
                   <input
                     value={form.assignedTo}
                     onChange={(e) => setForm((p) => ({ ...p, assignedTo: e.target.value }))}
                     placeholder="Nama petugas / tim..."
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
                   />
                 </div>
 
                 {/* Catatan */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    Catatan untuk Warga
-                  </label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Catatan untuk Warga</label>
                   <textarea
                     value={form.catatanAdmin}
                     onChange={(e) => setForm((p) => ({ ...p, catatanAdmin: e.target.value }))}
                     rows={3}
                     placeholder="Perkembangan penanganan atau alasan penolakan..."
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
                   />
                 </div>
 
                 {/* URL bukti */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    URL Bukti Selesai
-                  </label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">URL Bukti Selesai</label>
                   <input
                     value={form.buktiSelesai}
                     onChange={(e) => setForm((p) => ({ ...p, buktiSelesai: e.target.value }))}
                     placeholder="https://..."
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
                   />
                 </div>
 
-                {/* Simpan tanpa ubah status */}
                 <button
                   onClick={() => handleUpdate()}
                   disabled={submitting}
@@ -294,7 +285,6 @@ export default function AdminPengaduanDetailPage({
                   Simpan Catatan
                 </button>
 
-                {/* Ubah status */}
                 <div className="space-y-2 pt-1 border-t border-gray-100">
                   <p className="text-xs font-semibold text-gray-500 pt-1">Ubah Status</p>
                   {statusOptions
