@@ -15,7 +15,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
 
     const updated = await prisma.notifikasi.update({
       where: { id },
-      data: { isRead: true }, // ✅ pakai isRead, bukan status
+      data: { isRead: true },
     })
 
     return NextResponse.json({ success: true, data: updated })

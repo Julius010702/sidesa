@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth'
 
 const ADMIN_ROLES = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
 
-// Pesan notifikasi berdasarkan status
 function buildNotifWarga(
   jenisSurat: string,
   status: string,
@@ -98,7 +97,6 @@ export async function PATCH(
     })
     if (!existing) return NextResponse.json({ error: 'Surat tidak ditemukan' }, { status: 404 })
 
-    // Update surat
     const updated = await prisma.surat.update({
       where: { id },
       data: {
@@ -110,7 +108,6 @@ export async function PATCH(
       },
     })
 
-    // ✅ Kirim notifikasi ke warga jika status berubah
     if (status && status !== existing.status) {
       const { judul, pesan } = buildNotifWarga(existing.jenisSurat, status, fileUrl, catatanAdmin)
       await prisma.notifikasi.create({
