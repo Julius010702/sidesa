@@ -189,3 +189,49 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
+
+// ─────────────────────────────────────────────
+// DELETE → hapus user beserta data penduduk-nya
+// ─────────────────────────────────────────────
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session || !ADMIN_ROLES.includes(session.role))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    const { searchParams } = new URL(req.url)
+    const userId = searchParams.get('userId')
+    if (!userId)
+      return NextResponse.json({ error: 'userId wajib diisi' }, { status: 400 })
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { penduduk: true },
+    })
+    if (!user) return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 })
+
+    // Jangan izinkan hapus akun admin
+    if (ADMIN_ROLES.includes(user.role))
+      return NextResponse.json({ error: 'Akun admin tidak bisa dihapus dari sini' }, { status: 403 })
+
+    await prisma.$transaction(async (tx) => {
+      // Hapus notifikasi milik user terlebih dahulu
+      await tx.notifikasi.deleteMany({ where: { userId } })
+
+      // userId di Penduduk adalah required (non-nullable) di schema Prisma
+      // → tidak bisa lepas relasi, satu-satunya opsi adalah hapus record penduduk juga
+      // Konfirmasi sudah diberikan ke admin di UI sebelum aksi ini dijalankan
+      if (user.penduduk) {
+        await tx.penduduk.delete({ where: { id: user.penduduk.id } })
+      }
+
+      // Hapus user
+      await tx.user.delete({ where: { id: userId } })
+    })
+
+    return NextResponse.json({ success: true, message: 'Akun berhasil dihapus' })
+  } catch (err) {
+    console.error('[DELETE /api/admin/users]', err)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
