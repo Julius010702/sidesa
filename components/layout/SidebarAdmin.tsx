@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
 
@@ -15,6 +15,7 @@ interface NavItem {
   href: string
   label: string
   icon: React.ReactNode
+  badge?: number // untuk notif count
 }
 
 const navGroups: NavGroup[] = [
@@ -113,6 +114,16 @@ const navGroups: NavGroup[] = [
   {
     label: 'Sistem',
     items: [
+      // ✅ MENU BARU: Manajemen Pengguna
+      {
+        href: '/admin/users',
+        label: 'Manajemen Pengguna',
+        icon: (
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        ),
+      },
       {
         href: '/admin/chat',
         label: 'Helpdesk Chat',
@@ -143,6 +154,7 @@ interface SidebarContentProps {
   onNavigate: () => void
   onLogout: () => void
   isLoggingOut: boolean
+  pendingCount: number
 }
 
 function SidebarContent({
@@ -150,6 +162,7 @@ function SidebarContent({
   onNavigate,
   onLogout,
   isLoggingOut,
+  pendingCount,
 }: SidebarContentProps) {
   return (
     <div className="flex flex-col h-full">
@@ -177,6 +190,9 @@ function SidebarContent({
               {group.items.map((item) => {
                 const isActive =
                   pathname === item.href || pathname.startsWith(item.href + '/')
+                // Badge khusus untuk menu users
+                const badgeCount = item.href === '/admin/users' ? pendingCount : 0
+
                 return (
                   <Link
                     key={item.href}
@@ -198,7 +214,12 @@ function SidebarContent({
                       {item.icon}
                     </span>
                     <span className="flex-1 truncate">{item.label}</span>
-                    {isActive && (
+                    {/* Badge notif pending */}
+                    {badgeCount > 0 && (
+<span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center leading-none">                        {badgeCount}
+                      </span>
+                    )}
+                    {isActive && badgeCount === 0 && (
                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0" />
                     )}
                   </Link>
@@ -233,6 +254,17 @@ export default function SidebarAdmin() {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
+
+  // ✅ Ambil jumlah user pending verifikasi untuk badge
+  useEffect(() => {
+    fetch('/api/admin/users?filter=unverified')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setPendingCount(d.data?.length ?? 0)
+      })
+      .catch(() => {})
+  }, [pathname]) // re-fetch saat navigasi
 
   async function handleLogout() {
     setIsLoggingOut(true)
@@ -250,6 +282,7 @@ export default function SidebarAdmin() {
     onNavigate: () => setMobileOpen(false),
     onLogout: handleLogout,
     isLoggingOut,
+    pendingCount,
   }
 
   return (
@@ -264,6 +297,11 @@ export default function SidebarAdmin() {
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center shadow-lg text-white"
       >
+        {pendingCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
+            {pendingCount > 9 ? '9+' : pendingCount}
+          </span>
+        )}
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
