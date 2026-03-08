@@ -1,13 +1,55 @@
-// app/api/surat/[id]/route.ts  ← FILE INI YANG PUNYA params { id }
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import { updateSuratSchema } from '@/lib/validations'
-import { generateNomorSurat } from '@/lib/utils'
 
-// GET /api/surat/[id]
+const ADMIN_ROLES = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
+
+// Pesan notifikasi berdasarkan status
+function buildNotifWarga(
+  jenisSurat: string,
+  status: string,
+  fileUrl?: string | null,
+  catatanAdmin?: string | null
+): { judul: string; pesan: string } {
+  const label = jenisSurat.replace(/_/g, ' ')
+
+  switch (status) {
+    case 'DIPROSES':
+      return {
+        judul: '📋 Surat Sedang Diproses',
+        pesan: `Surat ${label} Anda sedang diproses oleh perangkat desa. Mohon tunggu.`,
+      }
+    case 'DISETUJUI':
+      return {
+        judul: '✅ Surat Disetujui',
+        pesan: `Surat ${label} Anda telah disetujui dan sedang disiapkan.${catatanAdmin ? ` Catatan: ${catatanAdmin}` : ''}`,
+      }
+    case 'SELESAI':
+      if (fileUrl) {
+        return {
+          judul: '🎉 Surat Siap Diunduh',
+          pesan: `Surat ${label} Anda sudah selesai dan dapat diunduh. Klik untuk melihat detail dan mengunduh surat Anda.`,
+        }
+      }
+      return {
+        judul: '🎉 Surat Sudah Selesai',
+        pesan: `Surat ${label} Anda sudah selesai. Silakan ambil langsung di kantor desa.${catatanAdmin ? ` Info: ${catatanAdmin}` : ''}`,
+      }
+    case 'DITOLAK':
+      return {
+        judul: '❌ Surat Ditolak',
+        pesan: `Surat ${label} Anda tidak dapat diproses.${catatanAdmin ? ` Alasan: ${catatanAdmin}` : ' Silakan hubungi perangkat desa untuk informasi lebih lanjut.'}`,
+      }
+    default:
+      return {
+        judul: `Update Surat ${label}`,
+        pesan: `Status surat ${label} Anda telah diperbarui menjadi ${status}.`,
+      }
+  }
+}
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -15,6 +57,7 @@ export async function GET(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { id } = await params
+    const isAdmin = ADMIN_ROLES.includes(session.role)
 
     const surat = await prisma.surat.findUnique({
       where: { id },
@@ -24,124 +67,66 @@ export async function GET(
     })
 
     if (!surat) return NextResponse.json({ error: 'Surat tidak ditemukan' }, { status: 404 })
-
-    const adminRoles = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
-    if (!adminRoles.includes(session.role) && surat.userId !== session.userId) {
+    if (!isAdmin && surat.userId !== session.userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     return NextResponse.json({ success: true, data: surat })
   } catch (error) {
-    console.error('[SURAT GET BY ID ERROR]', error)
+    console.error('[SURAT GET DETAIL ERROR]', error)
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 })
   }
 }
 
-// PATCH /api/surat/[id] — update status (admin only)
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const adminRoles = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
-    if (!adminRoles.includes(session.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!session || !ADMIN_ROLES.includes(session.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params
     const body = await req.json()
-    const parsed = updateSuratSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
-    }
+    const { status, nomorSurat, catatanAdmin, fileUrl } = body
 
-    const existing = await prisma.surat.findUnique({ where: { id } })
+    const existing = await prisma.surat.findUnique({
+      where: { id },
+      select: { userId: true, jenisSurat: true, status: true },
+    })
     if (!existing) return NextResponse.json({ error: 'Surat tidak ditemukan' }, { status: 404 })
 
-    const { status, catatanAdmin, nomorSurat, suratJadiUrl } = parsed.data
+    // Update surat
+    const updated = await prisma.surat.update({
+      where: { id },
+      data: {
+        ...(status ? { status } : {}),
+        ...(nomorSurat ? { nomorSurat } : {}),
+        ...(catatanAdmin !== undefined ? { catatanAdmin } : {}),
+        ...(fileUrl !== undefined ? { fileUrl } : {}),
+        ...(status === 'SELESAI' ? { tanggalSelesai: new Date() } : {}),
+      },
+    })
 
-    const updateData: Record<string, unknown> = {
-      ...(status && { status }),
-      ...(catatanAdmin !== undefined && { catatanAdmin }),
-      ...(suratJadiUrl !== undefined && { suratJadiUrl }),
-    }
-
-    if (status === 'DISETUJUI' && !existing.nomorSurat) {
-      updateData.nomorSurat = nomorSurat ?? generateNomorSurat(existing.jenisSurat)
-      updateData.tanggalDiproses = new Date()
-      updateData.processedBy = session.userId
-    }
-
-    if (status === 'SELESAI') updateData.tanggalSelesai = new Date()
-
-    if (status === 'DIPROSES' && !existing.tanggalDiproses) {
-      updateData.tanggalDiproses = new Date()
-      updateData.processedBy = session.userId
-    }
-
-    const updated = await prisma.surat.update({ where: { id }, data: updateData })
-
-    if (status) {
-      const pesanMap: Record<string, string> = {
-        DIPROSES: 'Surat Anda sedang diproses oleh perangkat desa.',
-        DISETUJUI: `Surat Anda telah disetujui dengan nomor ${updateData.nomorSurat ?? '-'}.`,
-        DITOLAK: `Surat Anda ditolak. ${catatanAdmin ? 'Alasan: ' + catatanAdmin : ''}`,
-        SELESAI: 'Surat Anda telah selesai dan siap diambil.',
-      }
-
-      if (pesanMap[status]) {
-        await prisma.notifikasi.create({
-          data: {
-            userId: existing.userId,
-            judul: `Status Surat Diperbarui: ${status}`,
-            pesan: pesanMap[status],
-            tipe: 'SURAT',
-            refId: id,
-          },
-        })
-      }
+    // ✅ Kirim notifikasi ke warga jika status berubah
+    if (status && status !== existing.status) {
+      const { judul, pesan } = buildNotifWarga(existing.jenisSurat, status, fileUrl, catatanAdmin)
+      await prisma.notifikasi.create({
+        data: {
+          userId: existing.userId,
+          judul,
+          pesan,
+          tipe: 'SURAT',
+          refId: id,
+        },
+      })
     }
 
     return NextResponse.json({ success: true, data: updated })
   } catch (error) {
     console.error('[SURAT PATCH ERROR]', error)
-    return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 })
-  }
-}
-
-// DELETE /api/surat/[id]
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const { id } = await params
-
-    const surat = await prisma.surat.findUnique({ where: { id } })
-    if (!surat) return NextResponse.json({ error: 'Surat tidak ditemukan' }, { status: 404 })
-
-    if (surat.userId !== session.userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    if (surat.status !== 'PENDING') {
-      return NextResponse.json(
-        { error: 'Hanya surat berstatus PENDING yang dapat dibatalkan' },
-        { status: 400 }
-      )
-    }
-
-    await prisma.surat.delete({ where: { id } })
-
-    return NextResponse.json({ success: true, message: 'Surat berhasil dibatalkan' })
-  } catch (error) {
-    console.error('[SURAT DELETE ERROR]', error)
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 })
   }
 }

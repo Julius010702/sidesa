@@ -290,18 +290,15 @@ model Berita {
 }
 
 model Notifikasi {
-  id        String           @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   judul     String
   pesan     String
   tipe      String
   refId     String?
-  status    StatusNotifikasi @default(BELUM_DIBACA)
-  createdAt DateTime         @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("notifikasi")
+  isRead    Boolean  @default(false)   // ← tambahkan ini
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ChatMessage {

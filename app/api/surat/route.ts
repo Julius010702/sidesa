@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { ajukanSuratSchema } from '@/lib/validations'
 
+const ADMIN_ROLES = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession()
@@ -14,8 +16,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status')
     const skip = (page - 1) * limit
 
-    const adminRoles = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
-    const isAdmin = adminRoles.includes(session.role)
+    const isAdmin = ADMIN_ROLES.includes(session.role)
 
     const where = {
       ...(isAdmin ? {} : { userId: session.userId }),
@@ -62,6 +63,12 @@ export async function POST(req: NextRequest) {
 
     const { jenisSurat, keperluan } = parsed.data
 
+    // Ambil data warga untuk nama di notifikasi admin
+    const warga = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { nama: true, nik: true },
+    })
+
     const surat = await prisma.surat.create({
       data: {
         userId: session.userId,
@@ -72,15 +79,39 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    const jenisSuratLabel = jenisSurat.replace(/_/g, ' ')
+
+    // ✅ Notifikasi ke warga sendiri
     await prisma.notifikasi.create({
       data: {
         userId: session.userId,
         judul: 'Pengajuan Surat Diterima',
-        pesan: `Pengajuan surat ${jenisSurat.replace(/_/g, ' ')} Anda telah diterima dan sedang menunggu diproses.`,
+        pesan: `Pengajuan surat ${jenisSuratLabel} Anda telah diterima dan sedang menunggu diproses oleh perangkat desa.`,
         tipe: 'SURAT',
         refId: surat.id,
       },
     })
+
+    // ✅ Notifikasi ke semua admin/perangkat desa
+    const adminUsers = await prisma.user.findMany({
+      where: {
+        role: { in: ADMIN_ROLES as never[] },
+        isActive: true,
+      },
+      select: { id: true },
+    })
+
+    if (adminUsers.length > 0) {
+      await prisma.notifikasi.createMany({
+        data: adminUsers.map((admin) => ({
+          userId: admin.id,
+          judul: 'Surat Masuk Baru',
+          pesan: `${warga?.nama ?? 'Warga'} (NIK: ${warga?.nik ?? '-'}) mengajukan Surat ${jenisSuratLabel}. Segera diproses.`,
+          tipe: 'SURAT',
+          refId: surat.id,
+        })),
+      })
+    }
 
     return NextResponse.json(
       { success: true, message: 'Surat berhasil diajukan', data: surat },
