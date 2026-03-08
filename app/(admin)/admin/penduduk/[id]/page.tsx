@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getSession } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import HeaderPage from '@/components/layout/HeaderPage'
@@ -12,7 +13,18 @@ async function getPenduduk(id: string) {
   return prisma.penduduk.findUnique({
     where: { id },
     include: {
-      kartuKeluarga: {                    // ✅ relasi ada di schema
+      // ✅ Tambah include user untuk ambil fotoUrl
+      user: {
+        select: {
+          id: true,
+          email: true,
+          fotoUrl: true,
+          isVerified: true,
+          isActive: true,
+          role: true,
+        },
+      },
+      kartuKeluarga: {
         include: {
           anggota: {
             where: { statusHidup: true },
@@ -22,8 +34,6 @@ async function getPenduduk(id: string) {
               nik: true,
               tanggalLahir: true,
               jenisKelamin: true,
-              // ❌ hubunganDenganKepala/hubunganKeluarga tidak ada di schema Penduduk
-              // Tampilkan statusKawin sebagai gantinya
               statusKawin: true,
             },
           },
@@ -62,6 +72,7 @@ export default async function DetailPendudukPage({ params, searchParams }: PageP
   if (!penduduk) notFound()
 
   const anggotaKK = penduduk.kartuKeluarga?.anggota ?? []
+  const fotoUrl = penduduk.user?.fotoUrl ?? null
 
   return (
     <div>
@@ -93,17 +104,41 @@ export default async function DetailPendudukPage({ params, searchParams }: PageP
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
             <div className="flex items-center gap-4 mb-5">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm ${
-                penduduk.jenisKelamin === JenisKelamin.LAKI_LAKI  // ✅ fix: was JenisKelamin.L
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-pink-100 text-pink-700'
-              }`}>
-                {penduduk.nama.charAt(0).toUpperCase()}
+              {/* ✅ Foto profil dari akun warga */}
+              <div className="relative shrink-0">
+                {fotoUrl ? (
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+                    <Image
+                      src={fotoUrl}
+                      alt={penduduk.nama}
+                      width={64}
+                      height={64}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm ${
+                    penduduk.jenisKelamin === JenisKelamin.LAKI_LAKI
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-pink-100 text-pink-700'
+                  }`}>
+                    {penduduk.nama.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {/* Badge verifikasi akun */}
+                {penduduk.user?.isVerified && (
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white" title="Akun terverifikasi">
+                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </div>
+
               <div>
                 <h2 className="text-lg font-bold text-gray-900">{penduduk.nama}</h2>
                 <p className="text-sm text-gray-500 font-mono">{penduduk.nik}</p>
-                <div className="flex gap-2 mt-1">
+                <div className="flex gap-2 mt-1 flex-wrap">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                     penduduk.jenisKelamin === JenisKelamin.LAKI_LAKI
                       ? 'bg-blue-50 text-blue-700'
@@ -114,7 +149,20 @@ export default async function DetailPendudukPage({ params, searchParams }: PageP
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                     {hitungUmur(penduduk.tanggalLahir)} tahun
                   </span>
+                  {penduduk.user && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      penduduk.user.isVerified
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {penduduk.user.isVerified ? '✓ Terverifikasi' : '⏳ Belum diverifikasi'}
+                    </span>
+                  )}
                 </div>
+                {/* Email akun jika ada */}
+                {penduduk.user?.email && (
+                  <p className="text-xs text-gray-400 mt-1">{penduduk.user.email}</p>
+                )}
               </div>
             </div>
 
@@ -131,7 +179,7 @@ export default async function DetailPendudukPage({ params, searchParams }: PageP
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</p>
                 <InfoRow label="Pendidikan" value={penduduk.pendidikan} />
                 <InfoRow label="Pekerjaan" value={penduduk.pekerjaan} />
-                <InfoRow label="Status Kawin" value={penduduk.statusKawin?.replace(/_/g, ' ')} />  {/* ✅ fix */}
+                <InfoRow label="Status Kawin" value={penduduk.statusKawin?.replace(/_/g, ' ')} />
               </div>
             </div>
           </div>
@@ -171,7 +219,7 @@ export default async function DetailPendudukPage({ params, searchParams }: PageP
                     }`}
                   >
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                      a.jenisKelamin === JenisKelamin.LAKI_LAKI  // ✅ fix
+                      a.jenisKelamin === JenisKelamin.LAKI_LAKI
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-pink-100 text-pink-700'
                     }`}>
@@ -195,6 +243,49 @@ export default async function DetailPendudukPage({ params, searchParams }: PageP
 
         {/* Right: Aksi & Bansos */}
         <div className="space-y-4">
+          {/* Info akun */}
+          {penduduk.user && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+              <h3 className="font-semibold text-gray-800 text-sm mb-3">Info Akun</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {fotoUrl ? (
+                    <Image src={fotoUrl} alt={penduduk.nama} width={32} height={32}
+                      className="w-8 h-8 rounded-full object-cover border border-gray-200" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                      {penduduk.nama.charAt(0)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-800 truncate">{penduduk.user.email}</p>
+                    <p className="text-xs text-gray-400">{penduduk.user.role}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    penduduk.user.isVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {penduduk.user.isVerified ? '✓ Terverifikasi' : '⏳ Belum diverifikasi'}
+                  </span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    penduduk.user.isActive ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {penduduk.user.isActive ? 'Aktif' : 'Nonaktif'}
+                  </span>
+                </div>
+                {fotoUrl && (
+                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    </svg>
+                    Foto profil sudah diupload
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
             <h3 className="font-semibold text-gray-800 text-sm mb-4">Aksi</h3>
             <div className="space-y-2">
