@@ -1,4 +1,5 @@
 // app/(admin)/admin/kartu-keluarga/[id]/page.tsx
+
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getSession } from '@/lib/auth'
@@ -58,6 +59,7 @@ export default async function DetailKKPage({ params }: PageProps) {
 
   const jumlahLakiLaki = kk.anggota.filter((a: Anggota) => a.jenisKelamin === 'LAKI_LAKI').length
   const jumlahPerempuan = kk.anggota.filter((a: Anggota) => a.jenisKelamin === 'PEREMPUAN').length
+  const bisaDihapus = kk.anggota.length === 0
 
   return (
     <div>
@@ -70,15 +72,56 @@ export default async function DetailKKPage({ params }: PageProps) {
           { label: kk.namaKepala },
         ]}
         action={
-          <Link
-            href="/admin/penduduk/tambah"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Tambah Anggota
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* Tombol Hapus KK */}
+            {bisaDihapus ? (
+              <form
+                action={async () => {
+                  'use server'
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kartu-keluarga/${id}`, {
+                    method: 'DELETE',
+                  })
+                  if (res.ok) redirect('/admin/kartu-keluarga')
+                }}
+              >
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Hapus KK
+                </button>
+              </form>
+            ) : (
+              <div className="relative group">
+                <button
+                  disabled
+                  className="inline-flex items-center gap-2 bg-gray-50 text-gray-400 border border-gray-200 px-4 py-2 rounded-xl text-sm font-semibold cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Hapus KK
+                </button>
+                <div className="absolute right-0 top-full mt-1 w-52 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Hapus semua anggota terlebih dahulu sebelum menghapus KK
+                </div>
+              </div>
+            )}
+
+            {/* Tombol Tambah Anggota */}
+            <Link
+              href="/admin/penduduk/tambah"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Tambah Anggota
+            </Link>
+          </div>
         }
       />
 
@@ -154,19 +197,12 @@ export default async function DetailKKPage({ params }: PageProps) {
                     href={`/admin/penduduk/${a.id}`}
                     className="flex items-center gap-4 px-5 py-4 hover:bg-blue-50/40 transition-colors group"
                   >
-                    {/* Nomor */}
                     <span className="text-xs font-bold text-gray-400 w-5 shrink-0 text-center">{i + 1}</span>
-
-                    {/* Avatar */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                      a.jenisKelamin === 'LAKI_LAKI'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-pink-100 text-pink-700'
+                      a.jenisKelamin === 'LAKI_LAKI' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
                     }`}>
                       {a.nama.charAt(0).toUpperCase()}
                     </div>
-
-                    {/* Info utama */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
                         {a.nama}
@@ -174,9 +210,7 @@ export default async function DetailKKPage({ params }: PageProps) {
                       <p className="text-xs font-mono text-gray-500 mt-0.5">{a.nik}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
-                          a.jenisKelamin === 'LAKI_LAKI'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-pink-100 text-pink-800'
+                          a.jenisKelamin === 'LAKI_LAKI' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'
                         }`}>
                           {a.jenisKelamin === 'LAKI_LAKI' ? 'L' : 'P'}
                         </span>
@@ -191,15 +225,11 @@ export default async function DetailKKPage({ params }: PageProps) {
                         )}
                       </div>
                     </div>
-
-                    {/* Status kawin */}
                     <div className="shrink-0 hidden sm:block">
                       <span className="text-xs font-semibold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-full">
                         {a.statusKawin?.replace(/_/g, ' ') ?? '-'}
                       </span>
                     </div>
-
-                    {/* Arrow */}
                     <svg className="w-4 h-4 text-gray-300 group-hover:text-blue-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
