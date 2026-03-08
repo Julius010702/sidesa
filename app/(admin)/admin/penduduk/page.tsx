@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getSession } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import HeaderPage from '@/components/layout/HeaderPage'
@@ -38,6 +39,13 @@ async function getPendudukList(search: string, page: number) {
         tanggalLahir: true,
         pekerjaan: true,
         statusKawin: true,
+        // ✅ Ambil fotoUrl dari relasi user
+        user: {
+          select: {
+            fotoUrl: true,
+            isVerified: true,
+          },
+        },
       },
     }),
     prisma.penduduk.count({ where }),
@@ -139,13 +147,37 @@ export default async function AdminPendudukPage({ searchParams }: PageProps) {
                 >
                   {/* Nama & NIK */}
                   <div className="md:col-span-4 flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${
-                      p.jenisKelamin === JenisKelamin.LAKI_LAKI
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-pink-100 text-pink-700'
-                    }`}>
-                      {p.nama.charAt(0).toUpperCase()}
+                    {/* ✅ Foto profil atau inisial */}
+                    <div className="relative shrink-0">
+                      {p.user?.fotoUrl ? (
+                        <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200">
+                          <Image
+                            src={p.user.fotoUrl}
+                            alt={p.nama}
+                            width={36}
+                            height={36}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${
+                          p.jenisKelamin === JenisKelamin.LAKI_LAKI
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-pink-100 text-pink-700'
+                        }`}>
+                          {p.nama.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {/* Badge verifikasi */}
+                      {p.user?.isVerified && (
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border border-white flex items-center justify-center" title="Terverifikasi">
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
+
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-gray-900 truncate">{p.nama}</p>
                       <p className="text-xs text-gray-500 font-mono mt-0.5">{p.nik}</p>
