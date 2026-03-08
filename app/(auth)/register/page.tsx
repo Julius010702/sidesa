@@ -123,21 +123,21 @@ export default function RegisterPage() {
     return (
       <div className="bg-white rounded-2xl shadow-xl shadow-gray-100 border border-gray-100 p-8 text-center">
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-          successInfo.isVerified ? 'bg-green-100' : 'bg-amber-100'
+          successInfo.isVerified ? 'bg-green-100' : 'bg-blue-100'
         }`}>
           {successInfo.isVerified ? (
             <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           ) : (
-            <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           )}
         </div>
 
         <h2 className="text-xl font-bold text-gray-900 mb-2">
-          {successInfo.isVerified ? 'Registrasi Berhasil!' : 'Menunggu Verifikasi'}
+          {successInfo.isVerified ? 'Registrasi Berhasil!' : 'Pendaftaran Diterima!'}
         </h2>
 
         <p className="text-sm text-gray-600 mb-5">{successInfo.message}</p>
@@ -154,29 +154,38 @@ export default function RegisterPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-              <p className="text-xs font-semibold text-amber-800 mb-2">Apa yang terjadi selanjutnya?</p>
-              <ul className="text-xs text-amber-700 space-y-1.5">
-                <li className="flex gap-2">
-                  <span>1.</span>
-                  <span>Admin desa akan menerima notifikasi pendaftaran Anda</span>
-                </li>
-                <li className="flex gap-2">
-                  <span>2.</span>
-                  <span>Admin akan mencocokkan NIK Anda dengan data kependudukan</span>
-                </li>
-                <li className="flex gap-2">
-                  <span>3.</span>
-                  <span>Setelah diverifikasi, Anda akan mendapat notifikasi dan dapat login</span>
-                </li>
-              </ul>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left">
+              <p className="text-xs font-semibold text-blue-800 mb-3">Apa yang terjadi selanjutnya?</p>
+              <div className="space-y-2.5">
+                <div className="flex gap-3 items-start">
+                  <span className="text-base shrink-0">✅</span>
+                  <p className="text-xs text-blue-700">Akun dan data kependudukan Anda sudah tercatat di sistem desa.</p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="text-base shrink-0">📋</span>
+                  <p className="text-xs text-blue-700">Admin desa akan melengkapi data Anda dan memverifikasi akun.</p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="text-base shrink-0">🔔</span>
+                  <p className="text-xs text-blue-700">Setelah diverifikasi, Anda bisa menggunakan semua layanan desa.</p>
+                </div>
+              </div>
             </div>
-            <Link
-              href="/login"
-              className="inline-block border border-gray-200 text-gray-600 px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-            >
-              Kembali ke Login
-            </Link>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-left">
+              <p className="text-xs text-gray-500">
+                Anda sudah bisa mencoba login sekarang. Hubungi kantor desa jika butuh bantuan.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <Link href="/login"
+                className="inline-block bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors">
+                Coba Masuk
+              </Link>
+              <Link href="/"
+                className="inline-block border border-gray-200 text-gray-600 px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
+                Ke Beranda
+              </Link>
+            </div>
           </div>
         )}
       </div>
