@@ -1,332 +1,276 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
-import { APP_NAME } from '@/lib/constants'
+import { useEffect, useState, useCallback } from 'react'
 
-interface NavGroup {
-  label: string
-  items: NavItem[]
+interface UserItem {
+  id: string
+  nik: string
+  nama: string
+  email: string
+  noHp: string | null
+  role: string
+  isVerified: boolean
+  isActive: boolean
+  createdAt: string
+  penduduk: { id: string; nama: string; nik: string; alamat: string } | null
 }
 
-interface NavItem {
-  href: string
-  label: string
-  icon: React.ReactNode
-  badge?: number // untuk notif count
-}
+type Tab = 'unverified' | 'all'
 
-const navGroups: NavGroup[] = [
-  {
-    label: 'Utama',
-    items: [
-      {
-        href: '/admin/dashboard',
-        label: 'Dashboard',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        ),
-      },
-    ],
-  },
-  {
-    label: 'Layanan',
-    items: [
-      {
-        href: '/admin/surat',
-        label: 'Surat Masuk',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        ),
-      },
-      {
-        href: '/admin/pengaduan',
-        label: 'Pengaduan',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-          </svg>
-        ),
-      },
-    ],
-  },
-  {
-    label: 'Data Desa',
-    items: [
-      {
-        href: '/admin/penduduk',
-        label: 'Data Penduduk',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        ),
-      },
-      {
-        href: '/admin/kartu-keluarga',
-        label: 'Kartu Keluarga',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
-        ),
-      },
-      {
-        href: '/admin/bansos',
-        label: 'Bantuan Sosial',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        ),
-      },
-    ],
-  },
-  {
-    label: 'Publikasi',
-    items: [
-      {
-        href: '/admin/berita',
-        label: 'Berita & Pengumuman',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-          </svg>
-        ),
-      },
-      {
-        href: '/admin/infrastruktur',
-        label: 'Infrastruktur',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-        ),
-      },
-    ],
-  },
-  {
-    label: 'Sistem',
-    items: [
-      // ✅ MENU BARU: Manajemen Pengguna
-      {
-        href: '/admin/users',
-        label: 'Manajemen Pengguna',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        ),
-      },
-      {
-        href: '/admin/chat',
-        label: 'Helpdesk Chat',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-        ),
-      },
-      {
-        href: '/admin/pengaturan',
-        label: 'Pengaturan Desa',
-        icon: (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        ),
-      },
-    ],
-  },
-]
+export default function AdminUsersPage() {
+  const [tab, setTab] = useState<Tab>('unverified')
+  const [users, setUsers] = useState<UserItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [processingId, setProcessingId] = useState<string | null>(null)
+  const [linkModal, setLinkModal] = useState<{ open: boolean; user: UserItem | null }>({ open: false, user: null })
+  const [linkNik, setLinkNik] = useState('')
+  const [linkError, setLinkError] = useState('')
 
-// ─── SidebarContent ─────────────────────────────────────────────────────────
-
-interface SidebarContentProps {
-  pathname: string
-  onNavigate: () => void
-  onLogout: () => void
-  isLoggingOut: boolean
-  pendingCount: number
-}
-
-function SidebarContent({
-  pathname,
-  onNavigate,
-  onLogout,
-  isLoggingOut,
-  pendingCount,
-}: SidebarContentProps) {
-  return (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-slate-700/50">
-        <Link href="/admin/dashboard" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-sm">SD</span>
-          </div>
-          <div>
-            <p className="text-white font-bold text-sm leading-tight">{APP_NAME}</p>
-            <p className="text-slate-400 text-xs">Panel Admin</p>
-          </div>
-        </Link>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
-        {navGroups.map((group) => (
-          <div key={group.label}>
-            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider px-2 mb-1">
-              {group.label}
-            </p>
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const isActive =
-                  pathname === item.href || pathname.startsWith(item.href + '/')
-                // Badge khusus untuk menu users
-                const badgeCount = item.href === '/admin/users' ? pendingCount : 0
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onNavigate}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group',
-                      isActive
-                        ? 'bg-white/10 text-white shadow-sm'
-                        : 'text-slate-300 hover:bg-white/8 hover:text-white'
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'shrink-0 transition-transform duration-150 group-hover:scale-110',
-                        isActive ? 'text-white' : 'text-slate-400'
-                      )}
-                    >
-                      {item.icon}
-                    </span>
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {/* Badge notif pending */}
-                    {badgeCount > 0 && (
-<span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center leading-none">                        {badgeCount}
-                      </span>
-                    )}
-                    {isActive && badgeCount === 0 && (
-                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0" />
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-slate-700/50">
-        <button
-          onClick={onLogout}
-          disabled={isLoggingOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-all disabled:opacity-50"
-        >
-          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          {isLoggingOut ? 'Keluar...' : 'Keluar'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Main Export ─────────────────────────────────────────────────────────────
-
-export default function SidebarAdmin() {
-  const pathname = usePathname()
-  const router = useRouter()
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [pendingCount, setPendingCount] = useState(0)
-
-  // ✅ Ambil jumlah user pending verifikasi untuk badge
-  useEffect(() => {
-    fetch('/api/admin/users?filter=unverified')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setPendingCount(d.data?.length ?? 0)
-      })
-      .catch(() => {})
-  }, [pathname]) // re-fetch saat navigasi
-
-  async function handleLogout() {
-    setIsLoggingOut(true)
+  const fetchUsers = useCallback(async () => {
+    setLoading(true)
+    const params = new URLSearchParams()
+    if (tab === 'unverified') params.set('filter', 'unverified')
+    if (search) params.set('q', search)
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      router.push('/login')
-      router.refresh()
-    } catch {
-      setIsLoggingOut(false)
+      const res = await fetch(`/api/admin/users?${params}`)
+      const data = await res.json()
+      if (data.success) setUsers(data.data)
+    } finally {
+      setLoading(false)
+    }
+  }, [tab, search])
+
+  useEffect(() => {
+    void fetchUsers()
+  }, [tab]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleAction(userId: string, action: string, extra?: Record<string, string>) {
+    setProcessingId(userId)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action, ...extra }),
+      })
+      const data = await res.json()
+      if (data.success) await fetchUsers()
+      else alert(data.error || 'Gagal melakukan aksi')
+    } finally {
+      setProcessingId(null)
     }
   }
 
-  const sharedProps: SidebarContentProps = {
-    pathname,
-    onNavigate: () => setMobileOpen(false),
-    onLogout: handleLogout,
-    isLoggingOut,
-    pendingCount,
+  async function handleLink() {
+    if (!linkModal.user) return
+    if (!linkNik || linkNik.length !== 16) { setLinkError('NIK harus 16 digit'); return }
+    setLinkError('')
+    const res = await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: linkModal.user.id, action: 'link', pendudukNik: linkNik }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      setLinkModal({ open: false, user: null })
+      setLinkNik('')
+      await fetchUsers()
+    } else {
+      setLinkError(data.error || 'Gagal menghubungkan')
+    }
   }
 
+  const unverifiedCount = users.filter((u) => !u.isVerified).length
+
   return (
-    <>
-      {/* Desktop */}
-      <aside className="hidden lg:flex w-64 bg-slate-900 flex-col fixed inset-y-0 left-0 z-30 shadow-xl">
-        <SidebarContent {...sharedProps} />
-      </aside>
+    <div className="p-6 space-y-5">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-gray-900">Manajemen Pengguna</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Verifikasi warga yang mendaftar dan hubungkan ke data kependudukan</p>
+<div className="mt-4 h-px bg-linear-to-r from-blue-100 via-gray-100 to-transparent" />      </div>
 
-      {/* Mobile toggle */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center shadow-lg text-white"
-      >
-        {pendingCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
-            {pendingCount > 9 ? '9+' : pendingCount}
-          </span>
-        )}
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setTab('unverified')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'unverified' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Perlu Verifikasi
+          {unverifiedCount > 0 && (
+            <span className="ml-2 bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{unverifiedCount}</span>
+          )}
+        </button>
+        <button
+          onClick={() => setTab('all')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'all' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Semua Pengguna
+        </button>
+      </div>
 
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <>
-          <div
-            className="lg:hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
+      {/* Search */}
+      <div className="flex gap-2 max-w-md">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && fetchUsers()}
+            placeholder="Cari nama, NIK, atau email..."
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <aside className="lg:hidden fixed inset-y-0 left-0 w-72 bg-slate-900 z-50 flex flex-col shadow-2xl">
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <SidebarContent {...sharedProps} />
-          </aside>
-        </>
+        </div>
+        <button onClick={fetchUsers} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
+          Cari
+        </button>
+      </div>
+
+      {/* Banner */}
+      {tab === 'unverified' && !loading && unverifiedCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+          <span className="text-xl shrink-0">⚠️</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-800">{unverifiedCount} warga menunggu verifikasi</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Klik <b>Hubungkan ke Penduduk</b> jika NIK sudah ada di data penduduk, atau klik <b>Verifikasi</b> untuk memberi akses langsung.
+            </p>
+          </div>
+        </div>
       )}
-    </>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        </div>
+      ) : users.length === 0 ? (
+        <div className="bg-white border border-gray-100 rounded-2xl px-6 py-16 text-center">
+          <div className="text-5xl mb-3">✅</div>
+          <p className="text-gray-500 font-medium">
+            {tab === 'unverified' ? 'Tidak ada warga yang perlu diverifikasi' : 'Belum ada pengguna terdaftar'}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <div className="col-span-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Nama / NIK</div>
+            <div className="col-span-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</div>
+            <div className="col-span-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</div>
+            <div className="col-span-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Data Penduduk</div>
+            <div className="col-span-2 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Aksi</div>
+          </div>
+
+          <div className="divide-y divide-gray-100">
+            {users.map((user) => (
+              <div key={user.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 px-5 py-4 items-start hover:bg-gray-50/50 transition-colors">
+                <div className="md:col-span-3">
+                  <p className="text-sm font-bold text-gray-900">{user.nama}</p>
+                  <p className="text-xs font-mono text-gray-400">{user.nik}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{new Date(user.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                </div>
+
+                <div className="md:col-span-3">
+                  <p className="text-sm text-gray-700 break-all">{user.email}</p>
+                  {user.noHp && <p className="text-xs text-gray-400 mt-0.5">{user.noHp}</p>}
+                </div>
+
+                <div className="md:col-span-2 flex flex-col gap-1.5">
+                  <span className={`inline-flex w-fit text-xs font-semibold px-2 py-0.5 rounded-full ${user.isVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {user.isVerified ? '✓ Terverifikasi' : '⏳ Pending'}
+                  </span>
+                  <span className={`inline-flex w-fit text-xs font-semibold px-2 py-0.5 rounded-full ${user.isActive ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                    {user.isActive ? 'Aktif' : 'Nonaktif'}
+                  </span>
+                </div>
+
+                <div className="md:col-span-2">
+                  {user.penduduk ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                      <p className="text-xs font-semibold text-green-800">✓ Terhubung</p>
+                      <p className="text-xs text-green-700 truncate">{user.penduduk.nama}</p>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-2">
+                      <p className="text-xs text-gray-500">Belum terhubung</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="md:col-span-2 flex flex-col gap-1.5">
+                  {!user.isVerified && (
+                    <>
+                      <button disabled={processingId === user.id} onClick={() => handleAction(user.id, 'verify')}
+                        className="text-xs font-semibold px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+                        ✓ Verifikasi
+                      </button>
+                      <button disabled={processingId === user.id} onClick={() => { setLinkModal({ open: true, user }); setLinkNik(user.nik); setLinkError('') }}
+                        className="text-xs font-semibold px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                        🔗 Hubungkan
+                      </button>
+                      <button disabled={processingId === user.id} onClick={() => handleAction(user.id, 'reject')}
+                        className="text-xs font-semibold px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
+                        ✕ Tolak
+                      </button>
+                    </>
+                  )}
+                  {user.isVerified && !user.penduduk && (
+                    <button disabled={processingId === user.id} onClick={() => { setLinkModal({ open: true, user }); setLinkNik(user.nik); setLinkError('') }}
+                      className="text-xs font-semibold px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                      🔗 Hubungkan
+                    </button>
+                  )}
+                  <button disabled={processingId === user.id} onClick={() => handleAction(user.id, 'toggle_active')}
+                    className="text-xs font-semibold px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
+                    {user.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal */}
+      {linkModal.open && linkModal.user && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Hubungkan ke Data Penduduk</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Masukkan NIK data penduduk untuk akun <span className="font-semibold text-gray-800">{linkModal.user.nama}</span>
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">NIK Penduduk <span className="text-red-500">*</span></label>
+                <input
+                  value={linkNik}
+                  onChange={(e) => { setLinkNik(e.target.value); setLinkError('') }}
+                  placeholder="16 digit NIK"
+                  maxLength={16}
+                  className={`w-full px-3.5 py-2.5 border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${linkError ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                />
+                {linkError && <p className="text-xs text-red-600 mt-1">{linkError}</p>}
+                <p className="text-xs text-gray-400 mt-1.5">NIK terdaftar: <span className="font-mono font-semibold text-gray-600">{linkModal.user.nik}</span></p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
+                💡 Setelah dihubungkan, akun warga diverifikasi otomatis dan dapat mengakses semua layanan desa.
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setLinkModal({ open: false, user: null }); setLinkNik(''); setLinkError('') }}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
+                Batal
+              </button>
+              <button onClick={handleLink}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
+                Hubungkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
