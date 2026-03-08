@@ -1,7 +1,7 @@
 // app/api/penduduk/[id]/route.ts
 // GET    → detail penduduk by id
 // PUT    → edit penduduk
-// DELETE → hapus/nonaktifkan penduduk
+// DELETE → nonaktifkan penduduk + hapus akun user terhubung
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
@@ -120,16 +120,36 @@ export async function DELETE(
 
     const { id } = await params
 
-    const existing = await prisma.penduduk.findUnique({ where: { id } })
+    // Ambil data penduduk beserta akun user yang terhubung
+    const existing = await prisma.penduduk.findUnique({
+      where: { id },
+      include: { user: { select: { id: true, role: true, nama: true } } },
+    })
     if (!existing) return NextResponse.json({ error: 'Penduduk tidak ditemukan' }, { status: 404 })
 
-    // Soft delete — tandai sebagai tidak aktif
-    await prisma.penduduk.update({
-      where: { id },
-      data: { statusHidup: false },
+    await prisma.$transaction(async (tx) => {
+      // 1. Soft delete penduduk — data tetap ada tapi tidak aktif
+      await tx.penduduk.update({
+        where: { id },
+        data: { statusHidup: false },
+      })
+
+      // 2. Hapus akun user yang terhubung (jika ada dan bukan akun admin)
+      if (existing.user && !ADMIN_ROLES.includes(existing.user.role)) {
+        // Hapus notifikasi user dulu (foreign key constraint)
+        await tx.notifikasi.deleteMany({ where: { userId: existing.user.id } })
+        // Hapus akun user
+        await tx.user.delete({ where: { id: existing.user.id } })
+      }
     })
 
-    return NextResponse.json({ success: true, message: 'Penduduk berhasil dihapus' })
+    return NextResponse.json({
+      success: true,
+      message: existing.user
+        ? `Data penduduk dinonaktifkan dan akun "${existing.user.nama}" berhasil dihapus`
+        : 'Data penduduk berhasil dinonaktifkan',
+      userDeleted: !!existing.user,
+    })
   } catch (err) {
     console.error('[DELETE /api/penduduk/[id]]', err)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
