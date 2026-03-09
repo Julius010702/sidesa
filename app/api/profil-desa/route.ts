@@ -16,16 +16,34 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
-    if (!session || !ADMIN_ROLES.includes(session.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!session || !ADMIN_ROLES.includes(session.role))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const body = await req.json()
-    const { namaDesaa, kepalaDesaa, alamat, telepon, email, website, deskripsi, visi, misi, luasWilayah, jumlahDusun } = body
+    const {
+      namaDesaa, kepalaDesaa, alamat, telepon, email, website,
+      deskripsi, visi, misi, luasWilayah, jumlahDusun,
+      logoUrl, bannerUrl   // ← tambah
+    } = body
 
-    if (!namaDesaa || !kepalaDesaa || !alamat) return NextResponse.json({ error: 'Nama desa, kepala desa, dan alamat wajib diisi' }, { status: 400 })
+    if (!namaDesaa || !kepalaDesaa || !alamat)
+      return NextResponse.json({ error: 'Nama desa, kepala desa, dan alamat wajib diisi' }, { status: 400 })
 
     const existing = await prisma.profilDesa.findFirst()
 
-    const data = { namaDesaa, kepalaDesaa, alamat, telepon: telepon || null, email: email || null, website: website || null, deskripsi: deskripsi || null, visi: visi || null, misi: misi || null, luasWilayah: luasWilayah ?? null, jumlahDusun: jumlahDusun ?? null }
+    const data = {
+      namaDesaa, kepalaDesaa, alamat,
+      telepon:     telepon     || null,
+      email:       email       || null,
+      website:     website     || null,
+      deskripsi:   deskripsi   || null,
+      visi:        visi        || null,
+      misi:        misi        || null,
+      luasWilayah: luasWilayah ?? null,
+      jumlahDusun: jumlahDusun ?? null,
+      logoUrl:     logoUrl     ?? null,   // ← tambah
+      bannerUrl:   bannerUrl   ?? null,   // ← tambah
+    }
 
     const profil = existing
       ? await prisma.profilDesa.update({ where: { id: existing.id }, data })

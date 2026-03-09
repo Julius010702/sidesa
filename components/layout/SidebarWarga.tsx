@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
 
@@ -70,7 +71,7 @@ const navItems: NavItem[] = [
   },
 ]
 
-// ─── SidebarContent ─────────────────────────────────────────────────────────
+// ─── SidebarContent ───────────────────────────────────────────────────────────
 
 interface SidebarContentProps {
   userName: string
@@ -79,6 +80,7 @@ interface SidebarContentProps {
   onNavigate: () => void
   onLogout: () => void
   isLoggingOut: boolean
+  logoUrl: string | null
 }
 
 function SidebarContent({
@@ -88,14 +90,26 @@ function SidebarContent({
   onNavigate,
   onLogout,
   isLoggingOut,
+  logoUrl,
 }: SidebarContentProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-green-800/30">
         <Link href="/dashboard" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-sm">SD</span>
+          <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt="Logo Desa"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain"
+                unoptimized
+              />
+            ) : (
+              <span className="text-white font-bold text-sm">SD</span>
+            )}
           </div>
           <div>
             <p className="text-white font-bold text-sm leading-tight">{APP_NAME}</p>
@@ -189,7 +203,7 @@ function SidebarContent({
   )
 }
 
-// ─── Main Export ─────────────────────────────────────────────────────────────
+// ─── Main Export ──────────────────────────────────────────────────────────────
 
 interface SidebarWargaProps {
   userName?: string
@@ -201,6 +215,14 @@ export default function SidebarWarga({ userName = 'Warga', userNik }: SidebarWar
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/profil-desa')
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setLogoUrl(d.data?.logoUrl ?? null) })
+      .catch(() => {})
+  }, [])
 
   async function handleLogout() {
     setIsLoggingOut(true)
@@ -220,6 +242,7 @@ export default function SidebarWarga({ userName = 'Warga', userNik }: SidebarWar
     onNavigate: () => setMobileOpen(false),
     onLogout: handleLogout,
     isLoggingOut,
+    logoUrl,
   }
 
   return (

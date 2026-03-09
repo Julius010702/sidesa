@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ interface NavItem {
   href: string
   label: string
   icon: React.ReactNode
-  badge?: number // untuk notif count
+  badge?: number
 }
 
 const navGroups: NavGroup[] = [
@@ -114,7 +115,6 @@ const navGroups: NavGroup[] = [
   {
     label: 'Sistem',
     items: [
-      // ✅ MENU BARU: Manajemen Pengguna
       {
         href: '/admin/users',
         label: 'Manajemen Pengguna',
@@ -147,7 +147,7 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-// ─── SidebarContent ─────────────────────────────────────────────────────────
+// ─── SidebarContent ───────────────────────────────────────────────────────────
 
 interface SidebarContentProps {
   pathname: string
@@ -155,6 +155,7 @@ interface SidebarContentProps {
   onLogout: () => void
   isLoggingOut: boolean
   pendingCount: number
+  logoUrl: string | null
 }
 
 function SidebarContent({
@@ -163,14 +164,26 @@ function SidebarContent({
   onLogout,
   isLoggingOut,
   pendingCount,
+  logoUrl,
 }: SidebarContentProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-slate-700/50">
         <Link href="/admin/dashboard" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-sm">SD</span>
+          <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt="Logo Desa"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain"
+                unoptimized
+              />
+            ) : (
+              <span className="text-white font-bold text-sm">SD</span>
+            )}
           </div>
           <div>
             <p className="text-white font-bold text-sm leading-tight">{APP_NAME}</p>
@@ -188,9 +201,7 @@ function SidebarContent({
             </p>
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const isActive =
-                  pathname === item.href || pathname.startsWith(item.href + '/')
-                // Badge khusus untuk menu users
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 const badgeCount = item.href === '/admin/users' ? pendingCount : 0
 
                 return (
@@ -214,9 +225,9 @@ function SidebarContent({
                       {item.icon}
                     </span>
                     <span className="flex-1 truncate">{item.label}</span>
-                    {/* Badge notif pending */}
                     {badgeCount > 0 && (
-<span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center leading-none">                        {badgeCount}
+                      <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center leading-none">
+                        {badgeCount}
                       </span>
                     )}
                     {isActive && badgeCount === 0 && (
@@ -247,7 +258,7 @@ function SidebarContent({
   )
 }
 
-// ─── Main Export ─────────────────────────────────────────────────────────────
+// ─── Main Export ──────────────────────────────────────────────────────────────
 
 export default function SidebarAdmin() {
   const pathname = usePathname()
@@ -255,16 +266,22 @@ export default function SidebarAdmin() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
 
-  // ✅ Ambil jumlah user pending verifikasi untuk badge
   useEffect(() => {
     fetch('/api/admin/users?filter=unverified')
       .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setPendingCount(d.data?.length ?? 0)
-      })
+      .then((d) => { if (d.success) setPendingCount(d.data?.length ?? 0) })
       .catch(() => {})
-  }, [pathname]) // re-fetch saat navigasi
+  }, [pathname])
+
+  // Fetch logo desa sekali saat mount
+  useEffect(() => {
+    fetch('/api/profil-desa')
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setLogoUrl(d.data?.logoUrl ?? null) })
+      .catch(() => {})
+  }, [])
 
   async function handleLogout() {
     setIsLoggingOut(true)
@@ -283,6 +300,7 @@ export default function SidebarAdmin() {
     onLogout: handleLogout,
     isLoggingOut,
     pendingCount,
+    logoUrl,
   }
 
   return (

@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
 
-// Placeholder kegiatan desa — ganti src dengan path foto asli Anda
 const kegiatanSlides = [
   {
     src: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&q=80',
@@ -46,10 +45,46 @@ const kategoriColor: Record<string, string> = {
   Perayaan: 'bg-rose-500',
 }
 
+// ← Dipindah keluar dari HomePage
+function LogoIcon({ size = 'md', logoUrl }: { size?: 'sm' | 'md'; logoUrl: string | null }) {
+  const cls = size === 'sm' ? 'w-7 h-7' : 'w-9 h-9'
+  const px = size === 'sm' ? 28 : 36
+  return (
+    <div className={`${cls} bg-green-600 rounded-xl flex items-center justify-center shadow-sm overflow-hidden shrink-0`}>
+      {logoUrl ? (
+        <Image
+          src={logoUrl}
+          alt="Logo Desa"
+          width={px}
+          height={px}
+          className="w-full h-full object-contain"
+          unoptimized
+        />
+      ) : (
+        <span className="text-white font-bold text-xs">SD</span>
+      )}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const [current, setCurrent] = useState(0)
   const [sliding, setSliding] = useState(false)
   const [direction, setDirection] = useState<'left' | 'right'>('left')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [namaDesa, setNamaDesa] = useState('SIDESAA')
+
+  useEffect(() => {
+    fetch('/api/profil-desa')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.data) {
+          setLogoUrl(d.data.logoUrl ?? null)
+          setNamaDesa(d.data.namaDesaa ?? 'SIDESAA')
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const goTo = useCallback(
     (index: number, dir?: 'left' | 'right') => {
@@ -84,10 +119,8 @@ export default function HomePage() {
       <nav className="border-b border-gray-100 bg-white/80 backdrop-blur sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-sm">SD</span>
-            </div>
-            <span className="font-bold text-gray-900 text-lg">SIDESAA</span>
+            <LogoIcon size="md" logoUrl={logoUrl} />
+            <span className="font-bold text-gray-900 text-lg">{namaDesa}</span>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -125,7 +158,6 @@ export default function HomePage() {
       `}</style>
 
       <section className="relative w-full h-44 sm:h-56 overflow-hidden bg-gray-900 max-w-6xl mx-auto mt-6 rounded-2xl">
-        {/* Gambar — sliding */}
         <div
           key={current}
           className={`absolute inset-0 ${sliding
@@ -142,10 +174,8 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Overlay gelap */}
         <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent z-10" />
 
-        {/* Caption pojok kiri bawah */}
         <div className="absolute bottom-10 left-4 sm:left-6 z-20">
           <span
             className={`inline-block text-white text-xs font-semibold px-2.5 py-1 rounded-full mb-1.5 ${
@@ -160,7 +190,6 @@ export default function HomePage() {
           <p className="text-white/50 text-xs mt-0.5">{kegiatanSlides[current].tanggal}</p>
         </div>
 
-        {/* Prev / Next */}
         <button
           onClick={prev}
           className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/30 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-sm text-lg"
@@ -172,7 +201,6 @@ export default function HomePage() {
           aria-label="Berikutnya"
         >›</button>
 
-        {/* Dot indicator */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
           {kegiatanSlides.map((_, i) => (
             <button
@@ -187,7 +215,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-      {/* ========================================================= */}
 
       {/* Hero teks */}
       <section className="max-w-6xl mx-auto px-4 pt-10 pb-16 text-center">
@@ -285,10 +312,8 @@ export default function HomePage() {
       <footer className="border-t border-gray-100 py-8">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">SD</span>
-            </div>
-            <span className="font-semibold text-gray-700 text-sm">SIDESAA</span>
+            <LogoIcon size="sm" logoUrl={logoUrl} />
+            <span className="font-semibold text-gray-700 text-sm">{namaDesa}</span>
           </div>
           <p className="text-xs text-gray-400">
             © 2024 SIDESAA · Sistem Informasi Desa Digital
