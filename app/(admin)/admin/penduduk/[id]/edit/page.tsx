@@ -33,7 +33,7 @@ export default async function EditPendudukPage({ params }: PageProps) {
       <EditPendudukClient penduduk={{
         id:           penduduk.id,
         nik:          penduduk.nik,
-        noKK:         penduduk.noKK,
+        noKK:         penduduk.noKK ?? '',
         nama:         penduduk.nama,
         jenisKelamin: penduduk.jenisKelamin,
         tempatLahir:  penduduk.tempatLahir,
