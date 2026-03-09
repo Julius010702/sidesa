@@ -1,3 +1,5 @@
+// app/api/kartu-keluarga/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
@@ -32,9 +34,8 @@ export async function GET(
             agama: true,
             pendidikan: true,
             pekerjaan: true,
-            statusKawin: true,      // ✅ fix: was statusPerkawinan
+            statusKawin: true,
             statusHidup: true,
-            // ❌ hubunganDenganKepala tidak ada di schema Penduduk
           },
         },
         _count: { select: { anggota: true } },
@@ -92,6 +93,7 @@ export async function PATCH(
 }
 
 // DELETE /api/kartu-keluarga/[id]
+// Menghapus KK + nonaktifkan semua bansos seluruh anggota KK tersebut
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -106,23 +108,64 @@ export async function DELETE(
 
     const kk = await prisma.kartuKeluarga.findUnique({
       where: { id },
-      include: { _count: { select: { anggota: true } } },
+      include: {
+        // Cek anggota aktif saja
+        anggota: {
+          where: { statusHidup: true },
+          select: { id: true },
+        },
+      },
     })
 
     if (!kk) {
       return NextResponse.json({ error: 'KK tidak ditemukan' }, { status: 404 })
     }
 
-    if (kk._count.anggota > 0) {
+    // Tolak jika masih ada anggota aktif
+    if (kk.anggota.length > 0) {
       return NextResponse.json(
         { error: 'Tidak dapat menghapus KK yang masih memiliki anggota aktif' },
         { status: 400 }
       )
     }
 
-    await prisma.kartuKeluarga.delete({ where: { id } })
+    // Ambil semua penduduk yang pernah terhubung ke KK ini (termasuk nonaktif)
+    const semuaPenduduk = await prisma.penduduk.findMany({
+      where: { noKK: kk.noKK },
+      select: { id: true },
+    })
+    const pendudukIds = semuaPenduduk.map((p) => p.id)
 
-    return NextResponse.json({ success: true, message: 'Kartu Keluarga berhasil dihapus' })
+    // Jalankan dalam satu transaksi:
+    // 1. Nonaktifkan semua bansos yang masih aktif/pending milik anggota KK ini
+    // 2. Lepas semua relasi penduduk dari KK (set noKK = null)
+    // 3. Hapus KK
+    await prisma.$transaction([
+      // Nonaktifkan bansos
+      prisma.bansos.updateMany({
+        where: {
+          pendudukId: { in: pendudukIds },
+          status: { in: ['AKTIF', 'PENDING'] },
+        },
+        data: {
+          status: 'TIDAK_AKTIF',
+          keterangan: `Dinonaktifkan otomatis: KK ${kk.noKK} dihapus`,
+          tanggalAkhir: new Date(),
+        },
+      }),
+      // Putus relasi penduduk ke KK
+      prisma.penduduk.updateMany({
+        where: { noKK: kk.noKK },
+        data: { noKK: null as unknown as string },
+      }),
+      // Hapus KK
+      prisma.kartuKeluarga.delete({ where: { id } }),
+    ])
+
+    return NextResponse.json({
+      success: true,
+      message: 'Kartu Keluarga berhasil dihapus dan bansos anggota dinonaktifkan',
+    })
   } catch (error) {
     console.error('[KK DELETE ERROR]', error)
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 })

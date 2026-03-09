@@ -139,7 +139,7 @@ model Penduduk {
   id               String       @id @default(cuid())
   userId           String       @unique
   nik              String       @unique
-  noKK             String
+  noKK             String?
   nama             String
   tempatLahir      String
   tanggalLahir     DateTime
@@ -296,11 +296,12 @@ model Notifikasi {
   pesan     String
   tipe      String
   refId     String?
-  isRead    Boolean  @default(false)   // ← tambahkan ini
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
 
+  @@map("notifikasi")   // ← tambahkan ini
+}
 model ChatMessage {
   id             String   @id @default(cuid())
   userId         String

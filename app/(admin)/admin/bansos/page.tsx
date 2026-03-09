@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import HeaderPage from '@/components/layout/HeaderPage'
 import { getStatusColor, getStatusLabel } from '@/lib/utils'
+import BansosActions from '@/components/BansosActions'
 
 const ADMIN_ROLES = ['ADMIN_DESA', 'SEKDES', 'KASI_PELAYANAN', 'KAUR_UMUM', 'RT_RW']
 
@@ -21,7 +22,9 @@ interface BansosItem {
 async function getBansosList(search: string, page: number, status: string) {
   const limit = 20
   const skip = (page - 1) * limit
-  const where: Record<string, unknown> = {}
+  const where: Record<string, unknown> = {
+    penduduk: { noKK: { not: null } },
+  }
   if (status) where.status = status
   if (search) {
     where.OR = [
@@ -61,7 +64,11 @@ export default async function AdminBansosPage({ searchParams }: PageProps) {
   const page = Math.max(1, parseInt(pageStr))
   const { data, total, totalPages } = await getBansosList(q, page, status)
 
-  const stats = await prisma.bansos.groupBy({ by: ['status'], _count: true })
+  const stats = await prisma.bansos.groupBy({
+    by: ['status'],
+    _count: true,
+    where: { penduduk: { noKK: { not: null } } },
+  })
   const statMap = Object.fromEntries(
     stats.map((s: { status: string; _count: number }) => [s.status, s._count])
   )
@@ -104,13 +111,14 @@ export default async function AdminBansosPage({ searchParams }: PageProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input name="q" defaultValue={q} placeholder="Cari nama / NIK..."
+            suppressHydrationWarning
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm" />
         </div>
         <select name="status" defaultValue={status}
           className="px-3 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
           {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <button type="submit"
+        <button type="submit" suppressHydrationWarning
           className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
           Cari
         </button>
@@ -129,26 +137,35 @@ export default async function AdminBansosPage({ searchParams }: PageProps) {
       ) : (
         <>
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            {/* Header kolom - tambah kolom Aksi */}
             <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-3 bg-gray-50 border-b border-gray-200">
-              <div className="col-span-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Penerima</div>
+              <div className="col-span-3 text-xs font-bold text-gray-600 uppercase tracking-wider">Penerima</div>
               <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider">Jenis</div>
               <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider">Tahun</div>
               <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider">Status</div>
-              <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Penyaluran</div>
+              <div className="col-span-1 text-xs font-bold text-gray-600 uppercase tracking-wider text-center">Salur</div>
+              <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Aksi</div>
             </div>
+
             <div className="divide-y divide-gray-100">
               {(data as BansosItem[]).map((b) => (
                 <div key={b.id}
                   className="grid grid-cols-1 md:grid-cols-12 gap-3 px-5 py-4 hover:bg-blue-50/30 transition-colors items-center">
-                  <div className="md:col-span-4">
+
+                  {/* Penerima */}
+                  <div className="md:col-span-3">
                     <p className="text-sm font-bold text-gray-900">{b.penduduk.nama}</p>
                     <p className="text-xs font-mono text-gray-500 mt-0.5">{b.penduduk.nik}</p>
                   </div>
+
+                  {/* Jenis */}
                   <div className="md:col-span-2">
                     <span className="text-xs font-semibold px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full">
                       {getStatusLabel(b.jenisBansos)}
                     </span>
                   </div>
+
+                  {/* Tahun & Nominal */}
                   <div className="md:col-span-2">
                     <p className="text-sm font-semibold text-gray-800">{b.tahun}</p>
                     {b.nominal && (
@@ -157,14 +174,26 @@ export default async function AdminBansosPage({ searchParams }: PageProps) {
                       </p>
                     )}
                   </div>
+
+                  {/* Status */}
                   <div className="md:col-span-2">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getStatusColor(b.status)}`}>
                       {getStatusLabel(b.status)}
                     </span>
                   </div>
-                  <div className="md:col-span-2 text-right">
+
+                  {/* Penyaluran */}
+                  <div className="md:col-span-1 text-center">
                     <span className="text-sm font-bold text-gray-800">{b._count.penyaluran}x</span>
-                    <p className="text-xs font-medium text-gray-500">penyaluran</p>
+                  </div>
+
+                  {/* Aksi */}
+                  <div className="md:col-span-2">
+                    <BansosActions
+                      id={b.id}
+                      status={b.status}
+                      namaPenerima={b.penduduk.nama}
+                    />
                   </div>
                 </div>
               ))}
